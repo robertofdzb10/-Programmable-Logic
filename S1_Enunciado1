@@ -1,0 +1,46 @@
+-- No tocar
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+use IEEE.std_logic_unsigned.all;
+
+entity main is
+    port (
+    g_clock_50: in std_logic;
+    v_sw  : in std_logic_vector (9 downto 0); 
+    v_bt  : in std_logic_vector (3 downto 0); 
+    g_led : out std_logic_vector(9 downto 0); 
+    g_hex0 : out std_logic_vector(6 downto 0);
+    g_hex1 : out std_logic_vector(6 downto 0);
+    g_hex2 : out std_logic_vector(6 downto 0);
+    g_hex3 : out std_logic_vector(6 downto 0);
+    g_hex4 : out std_logic_vector(6 downto 0);
+    g_hex5 : out std_logic_vector(6 downto 0) 
+    );
+end main;
+
+architecture Behavioral of main is
+
+-- Empezamos a poder tocar
+
+signal num_a: std_logic_vector (3 downto 0);
+signal num_b: std_logic_vector (3 downto 0);
+signal selector: std_logic;
+signal suma: std_logic_vector (3 downto 0);
+begin
+
+num_a<=v_sw(3 downto 0);
+num_b<=v_sw(6 downto 3);
+selector<=v_sw(7);
+g_led(3 downto 0) <= suma;
+
+process(selector, num_a, num_b)
+begin
+if selector = '0' then
+    suma<=num_a+num_b+1; -- Sumamos 1 
+else
+    suma<=num_a-num_b-1; -- Restamos 1 
+end if;
+end process;
+
+end Behavioral;
