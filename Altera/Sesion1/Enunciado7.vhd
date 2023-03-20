@@ -25,38 +25,37 @@ architecture Behavioral of main is
 signal num_a: std_logic_vector (3 downto 0);
 signal num_b: std_logic_vector (3 downto 0);
 signal suma: std_logic_vector (3 downto 0);
-signal error_led: std_logic;
-
+signal suma_t: std_logic_vector (3 downto 0);
 
 begin
 
 num_a<=v_sw(3 downto 0);
 num_b<=v_sw(7 downto 4);
-g_led(0)<=error_led;
 
 process(num_a, num_b)
 begin
 
-suma<=num_a + num_b;
+suma_t<=num_a + num_b;
 
-if (suma < 10) then
-    case suma is
-        when "0000" => g_hex0<="0000001";
-        when "0001" => g_hex0<="1001111";
-        when "0010" => g_hex0<="0010010";
-        when "0011" => g_hex0<="0000110";
-        when "0100" => g_hex0<="1001100";
-        when "0101" => g_hex0<="0100100";
-        when "0110" => g_hex0<="1100000";
-        when "0111" => g_hex0<="0001111";
-        when "1000" => g_hex0<="0000000";
-        when "1001" => g_hex0<="0001100";
-        when others => g_hex0<="0110000";
-    end case;
-else 
-    error_led<='1';
-    g_hex0<="0110000";
+if (suma_t > 10) then
+    suma <= suma_t - 10;
+else
+    suma <= suma_t;
 end if;
+
+case suma is
+    when "0000" => g_hex0<="0000001";
+    when "0001" => g_hex0<="1001111";
+    when "0010" => g_hex0<="0010010";
+    when "0011" => g_hex0<="0000110";
+    when "0100" => g_hex0<="1001100";
+    when "0101" => g_hex0<="0100100";
+    when "0110" => g_hex0<="1100000";
+    when "0111" => g_hex0<="0001111";
+    when "1000" => g_hex0<="0000000";
+    when "1001" => g_hex0<="0001100";
+    when others => g_hex0<="0110000";
+end case;
 
 end process;
 
