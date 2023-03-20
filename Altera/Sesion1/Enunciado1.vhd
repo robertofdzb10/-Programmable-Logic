@@ -43,6 +43,12 @@ case num_a is
     when "0111" => g_hex0<="0001111";
     when "1000" => g_hex0<="0000000";
     when "1001" => g_hex0<="0001100";
+    when "1010" => g_hex0<="0001000";
+    when "1011" => g_hex0<="1100000";--
+    when "1100" => g_hex0<="0110001";
+    when "1101" => g_hex0<="0000001";
+    when "1110" => g_hex0<="0110000";
+    when "1111" => g_hex0<="0111000";
     when others => g_hex0<="0110000";
 end case;
 end process;
