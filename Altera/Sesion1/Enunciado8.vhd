@@ -53,13 +53,13 @@ begin
             --if ((num_a - num_b) <= -10) then 
             --    resultado <= num_a - num_b + 10;
             --else 
-                resultado <= num_a - num_b + 10;
+                resultado <= num_a - num_b;
             --end if;
         else 
             --if ((num_b - num_a) <= -10) then 
             --    resultado <= num_b - num_a + 10;
             --else 
-                resultado <= num_b - num_a + 10;
+                resultado <= num_b - num_a;
             --end if;
         end if;
     end if;
