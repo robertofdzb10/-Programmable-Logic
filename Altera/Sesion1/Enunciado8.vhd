@@ -46,13 +46,6 @@ g_led(5)<=led_resta;
 process(num_a, num_b)
 begin
     if (selector <= '0') then 
-        led_resta <= '0';
-        --if ( (num_a + num_b) >= 10) then
-        --    resultado <= num_a + num_b - 10;
-        --else 
-            resultado <= num_a + num_b;
-        --end if;
-    else 
         led_resta <= '1';
         if (num_a > num_b) then
             --if ((num_a - num_b) <= -10) then 
@@ -67,6 +60,13 @@ begin
                 resultado <= num_b - num_a;
             --end if;
         end if;
+    else 
+        led_resta <= '0';
+        --if ( (num_a + num_b) >= 10) then
+        --    resultado <= num_a + num_b - 10;
+        --else 
+            resultado <= num_a + num_b;
+        --end if;
     end if;
     case resultado is
         when "0000" => g_hex0<="0000001";
