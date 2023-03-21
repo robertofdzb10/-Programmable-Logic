@@ -28,6 +28,8 @@ signal selector: std_logic;
 signal resultado: std_logic_vector (3 downto 0); 
 signal led_resultado: std_logic_vector (3 downto 0);
 signal led_signo: std_logic;
+signal led_resta: std_logic;
+
 
 
 
@@ -38,17 +40,20 @@ num_b<=v_sw(7 downto 4);
 selector<=v_bt(0);
 g_led(3 downto 0)<=led_resultado;
 g_led(4)<=led_signo;
+g_led(5)<=led_resta;
 
 
 process(num_a, num_b)
 begin
-    if (selector <= '1') then 
+    if (selector <= '0') then 
+        led_resta <= '0';
         --if ( (num_a + num_b) >= 10) then
         --    resultado <= num_a + num_b - 10;
         --else 
             resultado <= num_a + num_b;
         --end if;
     else 
+        led_resta <= '1';
         if (num_a > num_b) then
             --if ((num_a - num_b) <= -10) then 
             --    resultado <= num_a - num_b + 10;
