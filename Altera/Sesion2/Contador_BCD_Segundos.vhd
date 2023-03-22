@@ -43,6 +43,7 @@ begin
       else
          contador_base <= contador_base + 1;
       end if;
+   -- else
    end if;
 end process;
 
@@ -57,7 +58,9 @@ begin
          else
             contador<=contador+1; 
          end if;
+      -- else
       end if;
+   -- else 
    end if;
 end process;
 
