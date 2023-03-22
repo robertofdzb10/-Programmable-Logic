@@ -45,7 +45,7 @@ num_b_integer<=to_integer(signed(num_b));
 
 process(selector,num_a_integer, num_b_integer)
 begin
-    if (selector <= '0') then 
+    if (selector = '0') then 
         if (num_a_integer > num_b_integer) then
             resultado <= num_a_integer - num_b_integer;
         else 
