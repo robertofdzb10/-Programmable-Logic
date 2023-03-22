@@ -32,6 +32,8 @@ signal cout: std_logic;
 
 begin
 
+
+
 num_a<=v_sw(3 downto 0);
 num_b<=v_sw(7 downto 4);
 g_led(0)<=cout;
