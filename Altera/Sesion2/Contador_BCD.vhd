@@ -35,7 +35,7 @@ process(boton_reinicio, g_clock_50)
 begin
    if (boton_reinicio = '0') then
       contador <= "0000"; -- Si pulsamos inicio reiniciamos el contador 
-   elsif rising_edge(g_clock_50) then --
+   elsif rising_edge(g_clock_50) then -- El reloj trabaja a 50MHz (Cada 0,0000002s)
      if (contador="1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
         contador<="0000";
      else
