@@ -43,7 +43,7 @@ begin
       else
          contador_base <= contador_base + 1;
       end if;
-   -- else
+   -- else -- Este else esta relacionado com el reloj --> Secuencial (No hace falta el else)
    end if;
 end process;
 
@@ -58,9 +58,9 @@ begin
          else
             contador<=contador+1; 
          end if;
-      -- else
+      -- else -- Este else aunque no esta relacionado con el reloj, se relaciona con contador_base, una variable contador que va sumando su valor iteración a iteración --> Secuencial (No hace falta el else)
       end if;
-   -- else 
+   -- else -- Este else esta relacionado com el reloj --> Secuencial (No hace falta el else)
    end if;
 end process;
 
