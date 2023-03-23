@@ -35,7 +35,7 @@ signal led_debuger: std_logic;
 begin
 
 boton_reinicio<=v_bt(0);
-sw_op_1<=v_bt(1); -- ¿Por qué con sw no va?
+sw_op_1<=v_sw(0); -- ¿Por qué con sw no va?
 sw_op_2<=v_sw(2);
 sw_op_3<=v_sw(3);
 sw_op_4<=v_sw(4);
@@ -62,12 +62,12 @@ begin
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
       if (contador_base = 50000000) then
          if (contador = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
-            if (sw_op_1 = '0') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
-                contador <= "1001";
-                led_debuger<= '0';
+            if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
+               contador <= "1001";
+               led_debuger<= '0';
             else
-                contador <= "0000";
-                led_debuger <= '1';
+               contador <= "0000";
+               led_debuger <= '1';
             end if;
          else
             contador<=contador+1; 
