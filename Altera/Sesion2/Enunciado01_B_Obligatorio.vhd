@@ -30,17 +30,18 @@ signal sw_op_1: std_logic;
 signal sw_op_2: std_logic;
 signal sw_op_3: std_logic;
 signal sw_op_4: std_logic;
-signal led_debuger: std_logic;
+signal vuelta_subida: std_logic;
 
-begin
+begin 
 
 boton_reinicio<=v_bt(0);
-sw_op_1<=v_sw(0); -- ¿Por qué con sw no va?
-sw_op_2<=v_sw(2);
-sw_op_3<=v_sw(3);
-sw_op_4<=v_sw(4);
+-- Por defecto el programa llega hasta 9, y luego se reinicia a cero, no obstante, al activar alguno de los sw, se habilitan los diferentes modos de funcioanmiento
+sw_op_1<=v_sw(0); -- Opción 1 --> Mantener el 9 (Combinable con culaquiera de los otros modos)
+sw_op_2<=v_sw(1); -- Opción 2 --> Que suba hasta nueve, y luego baje de nueve a cero, y así sucesivamente
+sw_op_3<=v_sw(2); -- Opción 3 --> Muestra la secuencia de números pares o impares, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
+sw_op_4<=v_sw(3);
 g_led(3 downto 0)<=led_contador;
-g_led(4)<=led_debuger;
+
 
 process(boton_reinicio, g_clock_50)
 begin
@@ -55,23 +56,48 @@ begin
    end if;
 end process;
 
-process(boton_reinicio,contador_base, g_clock_50)
+process(boton_reinicio,contador_base, g_clock_50, sw_op_1, sw_op_2, sw_op_3, sw_op_4, vuelta_subida)
 begin
    if (boton_reinicio = '0') then
       contador <= "0000"; -- Si pulsamos inicio reiniciamos el contador 
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
       if (contador_base = 50000000) then
-         if (contador = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
-            if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
-               contador <= "1001";
-               led_debuger<= '0';
+
+         if (sw_op_2 = '1') then -- Si el sw_op_2 esta pulsado que suba hasta nueve, y luego baje de nueve a cero, y así sucesivamente
+            if (contador = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
+               if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
+                  contador <= "1001";
+               else
+                  vuelta_subida <= '0';
+                  contador <= contador - 1;
+               end if;
             else
-               contador <= "0000";
-               led_debuger <= '1';
+               if (contador = "0000") then
+                  vuelta_subida <= '1';
+                  contador<= contador + 1; 
+               elsif (vuelta_subida = '1') then
+                  contador<= contador + 1; 
+               else
+                  contador<= contador - 1; 
+               end if;
             end if;
+
+         elsif (sw_op_3 = '1') then -- Si el sw_op_2 esta pulsado que suba hasta nueve, y luego baje de nueve a cero, y así sucesivamente
+            --Sumar dos, y si es par empezar por 0 y si es impar por 1
+
          else
-            contador<=contador+1; 
+            vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
+            if (contador = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
+               if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
+                  contador <= "1001";
+               else
+                  contador <= "0000";
+               end if;
+            else
+               contador<= contador + 1; 
+            end if;
          end if;
+
       end if;
    end if;
 end process;
