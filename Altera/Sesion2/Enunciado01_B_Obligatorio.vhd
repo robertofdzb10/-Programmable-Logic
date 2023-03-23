@@ -30,6 +30,8 @@ signal sw_op_1: std_logic;
 signal sw_op_2: std_logic;
 signal sw_op_3: std_logic;
 signal sw_op_4: std_logic;
+signal sw_par: std_logic;
+signal bt_par_pulsado: std_logic;
 signal vuelta_subida: std_logic;
 
 begin 
@@ -39,7 +41,8 @@ boton_reinicio<=v_bt(0);
 sw_op_1<=v_sw(0); -- Opción 1 --> Mantener el 9 (Combinable con culaquiera de los otros modos)
 sw_op_2<=v_sw(1); -- Opción 2 --> Que suba hasta nueve, y luego baje de nueve a cero, y así sucesivamente
 sw_op_3<=v_sw(2); -- Opción 3 --> Muestra la secuencia de números pares o impares, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
-sw_op_4<=v_sw(3);
+sw_par<=v_sw(3); -- Sw para alterar entre par e impar
+sw_op_4<=v_sw(4); -- Opción 4 --> Muestra la secuencia de números primos, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
 g_led(3 downto 0)<=led_contador;
 
 
@@ -56,7 +59,7 @@ begin
    end if;
 end process;
 
-process(boton_reinicio,contador_base, g_clock_50, sw_op_1, sw_op_2, sw_op_3, sw_op_4, vuelta_subida)
+process(boton_reinicio,contador_base, g_clock_50, sw_op_1, sw_op_2, sw_op_3, sw_op_4, vuelta_subida, sw_par)
 begin
    if (boton_reinicio = '0') then
       contador <= "0000"; -- Si pulsamos inicio reiniciamos el contador 
@@ -82,8 +85,36 @@ begin
                end if;
             end if;
 
-         elsif (sw_op_3 = '1') then -- Si el sw_op_2 esta pulsado que suba hasta nueve, y luego baje de nueve a cero, y así sucesivamente
-            --Sumar dos, y si es par empezar por 0 y si es impar por 1
+         elsif (sw_op_3 = '1') then -- Si el sw_op_3 esta pulsado lleva a cabo la secuencia de números pares o impares, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
+            
+            vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
+            if (sw_par = '1') then -- Si pulsamos el botón de par, altermos entre par e impar
+               bt_par_pulsado <= '1';
+               contador <= "0000";
+            elsif( (sw_par = '0') and (bt_par_pulsado = '1') ) then --Si fue pùslado el botón para que fuera par y luego soltado, entra por esta sentencia
+               bt_par_pulsado <= '0';
+               contador <= "0001";
+            else 
+               contador <= contador;
+            end if;
+
+            if ( (contador = "1000") or (contador = "1001") ) then -- Si el contador llega a 9 (impares) o a 8(pares)
+               if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9 o el 8
+                  if (sw_par = '1') then
+                     contador <= "1000";
+                  else
+                     contador <= "1001";
+                  end if;
+               else
+                  if (sw_par = '1') then
+                     contador <= "0000";
+                  else
+                     contador <= "0001";
+                  end if;
+               end if;
+            else
+               contador<= contador + 2; 
+            end if;--Sumar dos, y si es par empezar por 0 y si es impar por 1
 
          else
             vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
