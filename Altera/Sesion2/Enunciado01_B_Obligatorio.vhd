@@ -33,12 +33,13 @@ signal sw_op_4: std_logic;
 signal sw_par: std_logic;
 signal bt_par_pulsado: std_logic;
 signal vuelta_subida: std_logic;
+signal contador_iteracion: std_logic_vector(1 downto 0);
 
 begin 
 
 boton_reinicio<=v_bt(0);
 -- Por defecto el programa llega hasta 9, y luego se reinicia a cero, no obstante, al activar alguno de los sw, se habilitan los diferentes modos de funcioanmiento
-sw_op_1<=v_sw(0); -- Opción 1 --> Mantener el 9 (Combinable con culaquiera de los otros modos)
+sw_op_1<=v_sw(0); -- Opción 1 --> Mantener el 9 (Combinable con culquiera de los otros modos, en cuyo caso mantendra el número mas alto correspondiente)
 sw_op_2<=v_sw(1); -- Opción 2 --> Que suba hasta nueve, y luego baje de nueve a cero, y así sucesivamente
 sw_op_3<=v_sw(2); -- Opción 3 --> Muestra la secuencia de números pares o impares, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
 sw_par<=v_sw(3); -- Sw para alterar entre par e impar
@@ -115,6 +116,25 @@ begin
             else
                contador<= contador + 2; 
             end if;--Sumar dos, y si es par empezar por 0 y si es impar por 1
+
+         elsif (sw_op_4 = '1') then -- Si el sw_op_4 esta pulsado lleva a cabo la secuencia de de números primos, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
+            vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
+            if (contador = "0111") then -- Si el contador llega a 7 reiniciamos a 0 
+               if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
+                  contador <= "0111";
+               else
+                  contador_iteracion <= "00";
+                  contador <= "0000"; -- Pongamos que nos es primo
+               end if;
+            else
+               case contador_iteracion is
+                  when "00" => contador <= "0010";
+                  when "01" => contador <= "0011";
+                  when "10" => contador <= "0101";
+                  when others => contador <= "0111";
+               end case;
+               contador_iteracion <= contador_iteracion + 1;
+            end if;
 
          else
             vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
