@@ -22,7 +22,8 @@ architecture Behavioral of main is
 
 -- Editable
 
-signal contador: std_logic_vector (3 downto 0);
+signal contador_segundos: std_logic_vector (3 downto 0);
+signal contador_segundos_decenas: std_logic_vector (3 downto 0);
 signal contador_base: integer range 0 to 50000000;
 signal boton_reinicio: std_logic;
 signal led_contador: std_logic_vector(3 downto 0);
@@ -30,7 +31,6 @@ signal led_contador: std_logic_vector(3 downto 0);
 begin
 
 boton_reinicio<=v_bt(0);
-g_led(3 downto 0)<=led_contador;
 
 
 process(boton_reinicio, g_clock_50)
@@ -43,30 +43,33 @@ begin
       else
          contador_base <= contador_base + 1;
       end if;
-   -- else -- Este else esta relacionado com el reloj --> Secuencial (No hace falta el else)
    end if;
 end process;
 
-process(boton_reinicio,contador_base, g_clock_50)
+process(boton_reinicio, contador_base, g_clock_50)
 begin
    if (boton_reinicio = '0') then
-      contador <= "0000"; -- Si pulsamos inicio reiniciamos el contador 
+      contador_segundos <= "0000"; -- Si pulsamos inicio reiniciamos ambos contador 
+      contador_segundos_decenas <= "0000";
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
       if (contador_base = 50000000) then
-         if (contador = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
-            contador <= "0000";
+         if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
+            contador_segundos <= "0000";
+            if (contador_segundos_decenas = "0101" ) then
+               contador_segundos_decenas<="0000";
+            else
+               contador_segundos_decenas<= contador_segundos_decenas + 1;
+            end if;
          else
-            contador<=contador+1; 
+            contador_segundos<=contador_segundos+1; 
          end if;
-      -- else -- Este else aunque no esta relacionado con el reloj, se relaciona con contador_base, una variable contador que va sumando su valor iteración a iteración --> Secuencial (No hace falta el else)
       end if;
-   -- else -- Este else esta relacionado com el reloj --> Secuencial (No hace falta el else)
    end if;
 end process;
 
-process(contador)
+process(contador_segundos)
 begin
-   case contador is
+   case contador_segundos is
       when "0000" => g_hex0 <="0000001";
       when "0001" => g_hex0 <="1001111";
       when "0010" => g_hex0 <="0010010";
@@ -79,8 +82,23 @@ begin
       when "1001" => g_hex0 <="0001100";
       when others => g_hex0 <="1111111";
    end case;
-   led_contador<= contador;
 end process;
 
+process(contador_segundos_decenas)
+begin
+   case contador_segundos_decenas is
+      when "0000" => g_hex1 <="0000001";
+      when "0001" => g_hex1 <="1001111";
+      when "0010" => g_hex1 <="0010010";
+      when "0011" => g_hex1 <="0000110";
+      when "0100" => g_hex1 <="1001100";
+      when "0101" => g_hex1 <="0100100";
+      when "0110" => g_hex1 <="1100000";
+      when "0111" => g_hex1 <="0001111";
+      when "1000" => g_hex1 <="0000000";
+      when "1001" => g_hex1 <="0001100";
+      when others => g_hex1 <="1111111";
+   end case;
+end process;
 
 end Behavioral;
