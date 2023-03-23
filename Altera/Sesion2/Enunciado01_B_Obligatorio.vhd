@@ -124,7 +124,7 @@ begin
                   contador <= "0111";
                else
                   contador_iteracion <= "00";
-                  contador <= "0000"; -- Pongamos que nos es primo
+                  contador <= "0000"; -- Pongamos que nos es primo y probar todo
                end if;
             else
                case contador_iteracion is
