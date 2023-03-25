@@ -27,7 +27,7 @@ signal contador_segundos_decenas: std_logic_vector (3 downto 0);
 signal contador_minutos: std_logic_vector (3 downto 0);
 signal contador_minutos_decenas: std_logic_vector (3 downto 0);
 signal contador_horas: std_logic_vector (3 downto 0);
-signal contador_horas_decenas: std_logic_vector (3 downto 0);
+signal contador_horas_decenas: std_logic_vector (1 downto 0);
 signal dia_semana: std_logic_vector (2 downto 0);
 signal contador_base: integer range 0 to 50000000;
 signal boton_reinicio: std_logic;
@@ -58,6 +58,9 @@ begin
       contador_segundos_decenas <= "0000";
       contador_minutos <= "0000";
       contador_minutos_decenas <= "0000";
+      contador_horas <= "0000";
+      contador_horas_decenas <= "00";
+      dia_semana <= "000";
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
       if (contador_base = 50000000) then
          if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
@@ -68,13 +71,12 @@ begin
                     contador_minutos <= "0000";
                     if (contador_minutos_decenas = "0101") then 
                         contador_minutos_decenas <= "0000";
-                        if (contador_horas = "1001") then 
-                            contador_horas <= "0000";
-                            if (contador_horas_decenas = "0101") then 
-                                contador_horas_decenas<= "0000";
-                            else
-                                contador_horas_decenas <= contador_horas_decenas + 1;
-                            end if;
+                        if ( (contador_horas_decenas = "10") and (contador_horas = "0011") ) then -- La hora se reinicia en 23:59 + 1 minuto, pasando a ser esta 00:00
+                           contador_horas <= "0000";
+                           contador_horas_decenas<= "00";
+                        elsif (contador_horas = "1001") then 
+                           contador_horas <= "0000";
+                           contador_horas_decenas <= contador_horas_decenas + 1;
                         else
                             contador_horas <= contador_horas + 1;
                         end if;
@@ -94,9 +96,10 @@ begin
    end if;
 end process;
 
-process(contador_segundos)
+
+process(contador_minutos)
 begin
-   case contador_segundos is
+   case contador_minutos is
       when "0000" => g_hex0 <="0000001";
       when "0001" => g_hex0 <="1001111";
       when "0010" => g_hex0 <="0010010";
@@ -111,9 +114,9 @@ begin
    end case;
 end process;
 
-process(contador_segundos_decenas)
+process(contador_minutos_decenas)
 begin
-   case contador_segundos_decenas is
+   case contador_minutos_decenas is
       when "0000" => g_hex1 <="0000001";
       when "0001" => g_hex1 <="1001111";
       when "0010" => g_hex1 <="0010010";
@@ -128,9 +131,9 @@ begin
    end case;
 end process;
 
-process(contador_minutos)
+process(contador_horas)
 begin
-   case contador_minutos is
+   case contador_horas is
       when "0000" => g_hex2 <="0000001";
       when "0001" => g_hex2 <="1001111";
       when "0010" => g_hex2 <="0010010";
@@ -145,54 +148,38 @@ begin
    end case;
 end process;
 
-process(contador_minutos_decenas)
-begin
-   case contador_minutos_decenas is
-      when "0000" => g_hex3 <="0000001";
-      when "0001" => g_hex3 <="1001111";
-      when "0010" => g_hex3 <="0010010";
-      when "0011" => g_hex3 <="0000110";
-      when "0100" => g_hex3 <="1001100";
-      when "0101" => g_hex3 <="0100100";
-      when "0110" => g_hex3 <="1100000";
-      when "0111" => g_hex3 <="0001111";
-      when "1000" => g_hex3 <="0000000";
-      when "1001" => g_hex3 <="0001100";
-      when others => g_hex3 <="1111111";
-   end case;
-end process;
-
-process(contador_horas)
-begin
-   case contador_horas is
-      when "0000" => g_hex4 <="0000001";
-      when "0001" => g_hex4 <="1001111";
-      when "0010" => g_hex4 <="0010010";
-      when "0011" => g_hex4 <="0000110";
-      when "0100" => g_hex4 <="1001100";
-      when "0101" => g_hex4 <="0100100";
-      when "0110" => g_hex4 <="1100000";
-      when "0111" => g_hex4 <="0001111";
-      when "1000" => g_hex4 <="0000000";
-      when "1001" => g_hex4 <="0001100";
-      when others => g_hex4 <="1111111";
-   end case;
-end process;
-
 process(contador_horas_decenas)
 begin
    case contador_horas_decenas is
-      when "0000" => g_hex5 <="0000001";
-      when "0001" => g_hex5 <="1001111";
-      when "0010" => g_hex5 <="0010010";
-      when "0011" => g_hex5 <="0000110";
-      when "0100" => g_hex5 <="1001100";
-      when "0101" => g_hex5 <="0100100";
-      when "0110" => g_hex5 <="1100000";
-      when "0111" => g_hex5 <="0001111";
-      when "1000" => g_hex5 <="0000000";
-      when "1001" => g_hex5 <="0001100";
-      when others => g_hex5 <="1111111";
+      when "00" => g_hex3 <="0000001";
+      when "01" => g_hex3 <="0010010";
+      when others => g_hex3 <="0010010";
+   end case;
+end process;
+
+process(dia_semana)
+begin
+   case dia_semana is
+      when "000" => g_hex4 <="1000001";
+      when "001" => g_hex4 <="0001000";
+      when "010" => g_hex4 <="1001111";
+      when "011" => g_hex4 <="1000001";
+      when "100" => g_hex4 <="1001111";
+      when "101" => g_hex4 <="0001000";
+      when others => g_hex4 <="0000001";
+   end case;
+end process;
+
+process(dia_semana)
+begin
+   case dia_semana is
+      when "000" => g_hex5 <="1110001";
+      when "001" => g_hex5 <="0001001";
+      when "010" => g_hex5 <="0001001";
+      when "011" => g_hex5 <="1000111";
+      when "100" => g_hex5 <="1000001";
+      when "101" => g_hex5 <="0100100";
+      when others => g_hex5 <="1000010";
    end case;
 end process;
 
