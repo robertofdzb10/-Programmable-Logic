@@ -87,7 +87,7 @@ begin
             end if;
 
          elsif (sw_op_3 = '1') then -- Si el sw_op_3 esta pulsado lleva a cabo la secuencia de números pares o impares, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
-            
+            contador_iteracion <= "00"; -- Por defecto ponemos el contador de la opción 4 a cero, por si cambiaramos a ese modo
             vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
             if (sw_par = '1') then -- Si pulsamos el botón de par, altermos entre par e impar
                bt_par_pulsado <= '1';
@@ -114,23 +114,29 @@ begin
                   end if;
                end if;
             else
-               contador<= contador + 2; 
+               if ( (sw_par = '1') and (contador(0) /= '0') ) then -- Para los casos en los que se cambie de modo, y estemos en modo par pero entremos con un número impar (Comprobamos si el bit menos significativo del número es cero (lo que indica que el número es par), siendo este disitnto del número 0)
+                  contador<= contador + 1; 
+               elsif( (contador /= "0000") and (sw_par = '0') and (contador(0) = '0')) then -- Para los casos en los que se cambie de modo, y estemos en modo impapar pero entremos con un número par (Comprobamos si el bit menos significativo del número no es cero (lo que indica que el número es impar))
+                  contador<= contador + 1; 
+               else 
+                  contador<= contador + 2; 
+               end if;
             end if;--Sumar dos, y si es par empezar por 0 y si es impar por 1
 
          elsif (sw_op_4 = '1') then -- Si el sw_op_4 esta pulsado lleva a cabo la secuencia de de números primos, llegando hasta el último y reiniciando a 0, para repetir el proceso indefinidamente
             vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
             if (contador = "0111") then -- Si el contador llega a 7 reiniciamos a 0 
                if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
+                  contador_iteracion <= "00";
                   contador <= "0111";
                else
                   contador_iteracion <= "00";
-                  contador <= "0000"; -- Pongamos que nos es primo y probar todo
+                  contador <= "0010"; -- Pongamos que nos es primo y probar todo
                end if;
             else
                case contador_iteracion is
-                  when "00" => contador <= "0010";
-                  when "01" => contador <= "0011";
-                  when "10" => contador <= "0101";
+                  when "00" => contador <= "0011";
+                  when "01" => contador <= "0101";
                   when others => contador <= "0111";
                end case;
                contador_iteracion <= contador_iteracion + 1;
@@ -138,6 +144,7 @@ begin
 
          else
             vuelta_subida <= '1'; -- Por defecto siempre vamos a estar subiendo
+            contador_iteracion <= "00"; -- Por defecto ponemos el contador de la opción 4 a cero, por si cambiaramos a ese modo
             if (contador = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
                if (sw_op_1 = '1') then -- Si el sw_op_1 esta pulsado, mantenemos el 9
                   contador <= "1001";
