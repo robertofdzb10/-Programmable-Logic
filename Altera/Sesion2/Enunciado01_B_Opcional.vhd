@@ -57,6 +57,8 @@ begin
       contador_segundos_decenas <= "0000";
       contador_minutos <= "0000";
       contador_minutos_decenas <= "0000";
+      contador_horas <= "0000";
+      contador_horas_decenas <= "0000";
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
       if (contador_base = 50000000) then
          if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)

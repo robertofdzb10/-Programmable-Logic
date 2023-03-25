@@ -52,8 +52,11 @@ end process;
 process(boton_reinicio, contador_base, g_clock_50)
 begin
    if (boton_reinicio = '0') then
+      contador_base_centesimas <= 0;
       contador_segundos <= "0000"; -- Si pulsamos inicio reiniciamos ambos contador 
       contador_segundos_decenas <= "0000";
+      contador_centesimas <= "0000";
+      contador_centesimas_decenas <= "0000";
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
 
         if (contador_base = 500000) then

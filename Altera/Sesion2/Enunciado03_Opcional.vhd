@@ -28,6 +28,7 @@ signal contador_minutos: std_logic_vector (3 downto 0);
 signal contador_minutos_decenas: std_logic_vector (3 downto 0);
 signal contador_horas: std_logic_vector (3 downto 0);
 signal contador_horas_decenas: std_logic_vector (3 downto 0);
+signal dia_semana: std_logic_vector (2 downto 0);
 signal contador_base: integer range 0 to 50000000;
 signal boton_reinicio: std_logic;
 signal led_contador: std_logic_vector(3 downto 0);
