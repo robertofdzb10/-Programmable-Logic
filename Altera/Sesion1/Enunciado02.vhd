@@ -24,6 +24,7 @@ architecture Behavioral of main is
 
 signal num_a: std_logic_vector (3 downto 0);
 signal signo: std_logic;
+
 begin
 
 num_a<=v_sw(3 downto 0);

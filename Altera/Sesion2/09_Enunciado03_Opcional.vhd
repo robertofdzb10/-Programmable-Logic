@@ -74,6 +74,11 @@ begin
                         if ( (contador_horas_decenas = "10") and (contador_horas = "0011") ) then -- La hora se reinicia en 23:59 + 1 minuto, pasando a ser esta 00:00
                            contador_horas <= "0000";
                            contador_horas_decenas<= "00";
+                           if (dia_semana = "110") then
+                              dia_semana <= "000";
+                           else
+                              dia_semana <= dia_semana + 1;
+                           end if;
                         elsif (contador_horas = "1001") then 
                            contador_horas <= "0000";
                            contador_horas_decenas <= contador_horas_decenas + 1;
@@ -152,7 +157,7 @@ process(contador_horas_decenas)
 begin
    case contador_horas_decenas is
       when "00" => g_hex3 <="0000001";
-      when "01" => g_hex3 <="0010010";
+      when "01" => g_hex3 <="1001111";
       when others => g_hex3 <="0010010";
    end case;
 end process;
