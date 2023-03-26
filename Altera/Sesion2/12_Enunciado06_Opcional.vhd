@@ -31,11 +31,12 @@ signal contador_horas_decenas: std_logic_vector (1 downto 0);
 signal contador_base: integer range 0 to 50000000;
 signal boton_reinicio: std_logic;
 signal led_contador: std_logic_vector(3 downto 0);
+signal sw_ocultarHora: std_logic;
 
 begin
 
 boton_reinicio<=v_bt(0);
-
+sw_ocultarHora<=v_sw(0);
 
 process(boton_reinicio, g_clock_50)
 begin
@@ -94,98 +95,92 @@ begin
    end if;
 end process;
 
-process(contador_segundos)
+process(contador_segundos, contador_segundos_decenas, contador_minutos, contador_minutos, contador_minutos_decenas, contador_horas, contador_horas_decenas)
 begin
-   case contador_segundos is
-      when "0000" => g_hex0 <="0000001";
-      when "0001" => g_hex0 <="1001111";
-      when "0010" => g_hex0 <="0010010";
-      when "0011" => g_hex0 <="0000110";
-      when "0100" => g_hex0 <="1001100";
-      when "0101" => g_hex0 <="0100100";
-      when "0110" => g_hex0 <="1100000";
-      when "0111" => g_hex0 <="0001111";
-      when "1000" => g_hex0 <="0000000";
-      when "1001" => g_hex0 <="0001100";
-      when others => g_hex0 <="1111111";
-   end case;
-end process;
+   if (sw_ocultarHora = '0') then
+      case contador_segundos is
+         when "0000" => g_hex0 <="0000001";
+         when "0001" => g_hex0 <="1001111";
+         when "0010" => g_hex0 <="0010010";
+         when "0011" => g_hex0 <="0000110";
+         when "0100" => g_hex0 <="1001100";
+         when "0101" => g_hex0 <="0100100";
+         when "0110" => g_hex0 <="1100000";
+         when "0111" => g_hex0 <="0001111";
+         when "1000" => g_hex0 <="0000000";
+         when "1001" => g_hex0 <="0001100";
+         when others => g_hex0 <="1111111";
+      end case;
 
-process(contador_segundos_decenas)
-begin
-   case contador_segundos_decenas is
-      when "0000" => g_hex1 <="0000001";
-      when "0001" => g_hex1 <="1001111";
-      when "0010" => g_hex1 <="0010010";
-      when "0011" => g_hex1 <="0000110";
-      when "0100" => g_hex1 <="1001100";
-      when "0101" => g_hex1 <="0100100";
-      when "0110" => g_hex1 <="1100000";
-      when "0111" => g_hex1 <="0001111";
-      when "1000" => g_hex1 <="0000000";
-      when "1001" => g_hex1 <="0001100";
-      when others => g_hex1 <="1111111";
-   end case;
-end process;
+      case contador_segundos_decenas is
+         when "0000" => g_hex1 <="0000001";
+         when "0001" => g_hex1 <="1001111";
+         when "0010" => g_hex1 <="0010010";
+         when "0011" => g_hex1 <="0000110";
+         when "0100" => g_hex1 <="1001100";
+         when "0101" => g_hex1 <="0100100";
+         when "0110" => g_hex1 <="1100000";
+         when "0111" => g_hex1 <="0001111";
+         when "1000" => g_hex1 <="0000000";
+         when "1001" => g_hex1 <="0001100";
+         when others => g_hex1 <="1111111";
+      end case;
 
-process(contador_minutos)
-begin
-   case contador_minutos is
-      when "0000" => g_hex2 <="0000001";
-      when "0001" => g_hex2 <="1001111";
-      when "0010" => g_hex2 <="0010010";
-      when "0011" => g_hex2 <="0000110";
-      when "0100" => g_hex2 <="1001100";
-      when "0101" => g_hex2 <="0100100";
-      when "0110" => g_hex2 <="1100000";
-      when "0111" => g_hex2 <="0001111";
-      when "1000" => g_hex2 <="0000000";
-      when "1001" => g_hex2 <="0001100";
-      when others => g_hex2 <="1111111";
-   end case;
-end process;
+      case contador_minutos is
+         when "0000" => g_hex2 <="0000001";
+         when "0001" => g_hex2 <="1001111";
+         when "0010" => g_hex2 <="0010010";
+         when "0011" => g_hex2 <="0000110";
+         when "0100" => g_hex2 <="1001100";
+         when "0101" => g_hex2 <="0100100";
+         when "0110" => g_hex2 <="1100000";
+         when "0111" => g_hex2 <="0001111";
+         when "1000" => g_hex2 <="0000000";
+         when "1001" => g_hex2 <="0001100";
+         when others => g_hex2 <="1111111";
+      end case;
 
-process(contador_minutos_decenas)
-begin
-   case contador_minutos_decenas is
-      when "0000" => g_hex3 <="0000001";
-      when "0001" => g_hex3 <="1001111";
-      when "0010" => g_hex3 <="0010010";
-      when "0011" => g_hex3 <="0000110";
-      when "0100" => g_hex3 <="1001100";
-      when "0101" => g_hex3 <="0100100";
-      when "0110" => g_hex3 <="1100000";
-      when "0111" => g_hex3 <="0001111";
-      when "1000" => g_hex3 <="0000000";
-      when "1001" => g_hex3 <="0001100";
-      when others => g_hex3 <="1111111";
-   end case;
-end process;
+      case contador_minutos_decenas is
+         when "0000" => g_hex3 <="0000001";
+         when "0001" => g_hex3 <="1001111";
+         when "0010" => g_hex3 <="0010010";
+         when "0011" => g_hex3 <="0000110";
+         when "0100" => g_hex3 <="1001100";
+         when "0101" => g_hex3 <="0100100";
+         when "0110" => g_hex3 <="1100000";
+         when "0111" => g_hex3 <="0001111";
+         when "1000" => g_hex3 <="0000000";
+         when "1001" => g_hex3 <="0001100";
+         when others => g_hex3 <="1111111";
+      end case;
 
-process(contador_horas)
-begin
-   case contador_horas is
-      when "0000" => g_hex4 <="0000001";
-      when "0001" => g_hex4 <="1001111";
-      when "0010" => g_hex4 <="0010010";
-      when "0011" => g_hex4 <="0000110";
-      when "0100" => g_hex4 <="1001100";
-      when "0101" => g_hex4 <="0100100";
-      when "0110" => g_hex4 <="1100000";
-      when "0111" => g_hex4 <="0001111";
-      when "1000" => g_hex4 <="0000000";
-      when "1001" => g_hex4 <="0001100";
-      when others => g_hex4 <="1111111";
-   end case;
-end process;
+      case contador_horas is
+         when "0000" => g_hex4 <="0000001";
+         when "0001" => g_hex4 <="1001111";
+         when "0010" => g_hex4 <="0010010";
+         when "0011" => g_hex4 <="0000110";
+         when "0100" => g_hex4 <="1001100";
+         when "0101" => g_hex4 <="0100100";
+         when "0110" => g_hex4 <="1100000";
+         when "0111" => g_hex4 <="0001111";
+         when "1000" => g_hex4 <="0000000";
+         when "1001" => g_hex4 <="0001100";
+         when others => g_hex4 <="1111111";
+      end case;
 
-process(contador_horas_decenas)
-begin
-   case contador_horas_decenas is
-      when "00" => g_hex5 <="0000001";
-      when "01" => g_hex5 <="1001111";
-      when others => g_hex5 <="0010010";
-   end case;
+      case contador_horas_decenas is
+         when "00" => g_hex5 <="0000001";
+         when "01" => g_hex5 <="1001111";
+         when others => g_hex5 <="0010010";
+      end case;
+   else
+      g_hex0 <="1111111"; -- Apagamos todos los 7 segmentos
+      g_hex1 <="1111111";
+      g_hex2 <="1111111";
+      g_hex3 <="1111111";
+      g_hex4 <="1111111";
+      g_hex5 <="1111111";
+   end if;
 end process;
 
 end Behavioral;
