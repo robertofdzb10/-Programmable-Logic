@@ -27,17 +27,17 @@ signal contador_segundos_decenas: std_logic_vector (3 downto 0);
 signal contador_base: integer range 0 to 50000000;
 signal boton_reinicio: std_logic;
 signal led_contador: std_logic_vector(3 downto 0);
-signal parar: std_logic;
+signal bajar: integer range 0 to 1;
 
 begin
 
 boton_reinicio<=v_bt(0);
-g_led(0)<=parar;
+--g_led(0)<=bajar;
 
 
-process(boton_reinicio, g_clock_50, parar)
+process(boton_reinicio, g_clock_50)
 begin
-   if ( (boton_reinicio = '0') or (parar = '1') ) then -- ¡Botones activos por nivél bajo! --> 0 es pulsado
+   if (boton_reinicio = '0') then -- ¡Botones activos por nivél bajo! --> 0 es pulsado
         contador_base <= 0; -- Si pulsamos inicio reiniciamos el contador base
    elsif rising_edge(g_clock_50) then -- El reloj trabaja a 50MHz (Cada 0,0000002s)
       if (contador_base = 50000000) then -- De esta manera estamos dividiendo 50Mhz entre 50M, por lo que el resultado es 1hz o lo que es lo mismo, 1s
@@ -48,28 +48,45 @@ begin
    end if;
 end process;
 
-process(boton_reinicio, contador_base, g_clock_50)
+process(boton_reinicio, contador_base, g_clock_50, bajar)
 begin
-   if (boton_reinicio = '0') then
+    if (boton_reinicio = '0') then
       contador_segundos <= "0000"; -- Si pulsamos inicio reiniciamos todos los contadores
       contador_segundos_decenas <= "0000";
-      parar <= '0';
-   elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
-      if (contador_base = 50000000) then
-         if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
-            contador_segundos <= "0000";
-            if (contador_segundos_decenas = "0101" ) then
-                contador_segundos_decenas<= contador_segundos_decenas + 1;
-                parar <= '1'; -- Cuando llegue a un minuto se para
-            else
-               contador_segundos_decenas<= contador_segundos_decenas + 1;
+      bajar <= 0;
+    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
+        if (bajar = 0) then 
+            if (contador_base = 50000000) then
+                if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
+                    contador_segundos <= "0000";
+                    if (contador_segundos_decenas = "0101" ) then
+                        contador_segundos_decenas<= contador_segundos_decenas + 1;
+                        bajar <= 1; -- Cuando llegue a un minuto se para yempieza a bajar
+                    else
+                        contador_segundos_decenas<= contador_segundos_decenas + 1;
+                    end if;
+                else
+                    contador_segundos<=contador_segundos+1; 
+                end if;
             end if;
-         else
-            contador_segundos<=contador_segundos+1; 
-         end if;
-      end if;
-   end if;
+        else
+            if (contador_base = 50000000) then
+                if (contador_segundos = "0000") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
+                    contador_segundos <= "1001";
+                    if (contador_segundos_decenas = "0000" ) then
+                        bajar <= 0; -- Cuando llegue a un minuto se para y empieza a subir
+                    else
+                        contador_segundos_decenas<= contador_segundos_decenas - 1;
+                    end if;
+                else
+                    contador_segundos<=contador_segundos - 1; 
+                end if;
+            end if;
+        end if;
+    end if;
+
 end process;
+
 
 process(contador_segundos)
 begin
