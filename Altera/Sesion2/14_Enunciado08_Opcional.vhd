@@ -26,13 +26,12 @@ signal contador_segundos: std_logic_vector (3 downto 0);
 signal contador_segundos_decenas: std_logic_vector (3 downto 0);
 signal contador_base: integer range 0 to 50000000;
 signal boton_reinicio: std_logic;
-signal led_contador: std_logic_vector(3 downto 0);
-signal bajar: integer range 0 to 1;
+signal bajar: std_logic; -- := Sirve para la declaración de variables, asignanado el valor inmediatamente
 
 begin
 
 boton_reinicio<=v_bt(0);
---g_led(0)<=bajar;
+g_led(0)<=bajar;
 
 
 process(boton_reinicio, g_clock_50)
@@ -48,20 +47,26 @@ begin
    end if;
 end process;
 
-process(boton_reinicio, contador_base, g_clock_50, bajar)
+process(boton_reinicio)
 begin
     if (boton_reinicio = '0') then
       contador_segundos <= "0000"; -- Si pulsamos inicio reiniciamos todos los contadores
       contador_segundos_decenas <= "0000";
-      bajar <= 0;
-    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
-        if (bajar = 0) then 
+      bajar <= '0';
+    else
+    end if;
+end process;
+
+process(g_clock_50, contador_base, bajar)
+begin
+    if rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
+        if (bajar = '0') then 
             if (contador_base = 50000000) then
                 if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
                     contador_segundos <= "0000";
                     if (contador_segundos_decenas = "0101" ) then
                         contador_segundos_decenas<= contador_segundos_decenas + 1;
-                        bajar <= 1; -- Cuando llegue a un minuto se para yempieza a bajar
+                        bajar <= '1'; -- Cuando llegue a un minuto se para yempieza a bajar
                     else
                         contador_segundos_decenas<= contador_segundos_decenas + 1;
                     end if;
@@ -74,7 +79,7 @@ begin
                 if (contador_segundos = "0000") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
                     contador_segundos <= "1001";
                     if (contador_segundos_decenas = "0000" ) then
-                        bajar <= 0; -- Cuando llegue a un minuto se para y empieza a subir
+                        bajar <= '0'; -- Cuando llegue a un minuto se para y empieza a subir
                     else
                         contador_segundos_decenas<= contador_segundos_decenas - 1;
                     end if;
@@ -84,7 +89,6 @@ begin
             end if;
         end if;
     end if;
-
 end process;
 
 
