@@ -53,7 +53,7 @@ begin
    if (boton_reinicio = '0') then -- ¡Botones activos por nivél bajo! --> 0 es pulsado
       contador_base <= 0; -- Si pulsamos inicio reiniciamos el contador base
    elsif rising_edge(g_clock_50) then -- El reloj trabaja a 50MHz (Cada 0,0000002s)
-      if (contador_base = (50000000 - tope_variable)) then -- De esta manera estamos dividiendo 50Mhz entre 50M, por lo que el resultado es 1hz o lo que es lo mismo, 1s
+      if (contador_base = (50000000 / tope_variable)) then -- De esta manera estamos dividiendo 50Mhz entre 50M, por lo que el resultado es 1hz o lo que es lo mismo, 1s
          contador_base <= 0;
       else
          contador_base <= contador_base + 1;
@@ -71,7 +71,7 @@ begin
       contador_horas <= "0000";
       contador_horas_decenas <= "00";
    elsif rising_edge(g_clock_50) then -- Se comprueba cada ciclo de reloj, para evitar que se este comprobando constantemente
-      if (contador_base = (50000000 - tope_variable)) then
+      if (contador_base = (50000000 / tope_variable)) then
          if (contador_segundos = "1001") then -- Si el contador llega a 9 reiniciamos a 0 (Característica del contador BCD)
             contador_segundos <= "0000";
             if (contador_segundos_decenas = "0101" ) then
