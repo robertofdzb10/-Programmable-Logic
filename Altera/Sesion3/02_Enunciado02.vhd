@@ -26,23 +26,22 @@ signal inicio: std_logic;
 signal pulsador: std_logic;
 signal pulso_salida: std_logic;
 signal estado: std_logic_vector (1 downto 0);
-signal revision: std_logic;
 
 
 begin
 
-g_led(0)<=revision;
+g_led(0)<=pulso_salida;
 inicio<=v_bt(0);
 pulsador<=v_bt(1);
 
 process(inicio, g_clock_50)
 begin
-if inicio='1' then 
+if (inicio='0') then 
    estado<="00";
-elsif (g_clock_50 ='1') and (g_clock_50'event) then -- (Flanco de subida) Esta condición se evalúa como verdadera si la señal g_clock_50 es igual a '1' y ha ocurrido un evento en la señal g_clock_50. Un evento se produce en la señal g_clock_50 cuando cambia de valor, ya sea de '0' a '1' o de '1' a '0'.
+elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) Esta condición se evalúa como verdadera si la señal g_clock_50 es igual a '1' y ha ocurrido un evento en la señal g_clock_50. Un evento se produce en la señal g_clock_50 cuando cambia de valor, ya sea de '0' a '1' o de '1' a '0'.
     case estado is
         when "00" => -- Estamos en Inicio
-                if pulsador = '1' then -- Mientras no pulsemos nos mantenemos en inicio
+            if (pulsador = '1') then -- Mientras no pulsemos nos mantenemos en inicio
                 estado<="00";
             else
                 estado<="01"; -- Al pulsar pasamos al siguiente estado
@@ -50,7 +49,7 @@ elsif (g_clock_50 ='1') and (g_clock_50'event) then -- (Flanco de subida) Esta c
         when "01" => -- Estamos en Apretado
                 estado<="10"; -- Pasamos en ese flanco a soltado
         when "10" => -- Estamos en Soltado
-                if pulsador='1' then -- Si el pulsado esta suelto, pasamos a inicio
+            if (pulsador = '1') then -- Si el pulsado esta suelto, pasamos a inicio
                 estado<="00";
             else
                 estado<="10"; -- Sino nos quedamos en soltado
@@ -64,10 +63,8 @@ process(estado)
 begin
 case estado is
     when "00" => pulso_salida<='0';
-    when "01" => pulso_salida<='1';
-    when "10" => 
-                pulso_salida<='0';
-                pulso_salida <= not revision;
+    when "01" => pulso_salida<='1'; -- De manera que genere un único pulso, por pulsación, ya que en ese estado esta solo un pulso de reloj
+    when "10" => pulso_salida<='0';
     when others => pulso_salida<='0';
 end case;
 end process;

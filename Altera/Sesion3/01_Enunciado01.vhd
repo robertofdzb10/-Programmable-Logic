@@ -38,7 +38,7 @@ pulsador<=v_bt(1);
 
 process(inicio, g_clock_50)
 begin
-if inicio='0' then -- Botón reinicio
+if (inicio='0') then -- Botón reinicio (Ponerlo siempre)
     estado<="00";
 elsif rising_edge(g_clock_50) then
     case estado is
