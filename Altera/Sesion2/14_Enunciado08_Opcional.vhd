@@ -57,6 +57,7 @@ begin
             if ((vuelta_bajada = '0') and (contador_segundos = "1001")) then
                 if (contador_segundos_decenas ="0101") then
                     vuelta_bajada <= '1';
+                    contador_segundos <= contador_segundos - 1;
                 else
                     contador_segundos <= "0000";
                     contador_segundos_decenas <= contador_segundos_decenas + 1;
@@ -64,6 +65,7 @@ begin
             elsif ((vuelta_bajada = '1') and (contador_segundos = "0000")) then 
                 if (contador_segundos_decenas = "0000") then
                     vuelta_bajada <= '0';
+                    contador_segundos <= contador_segundos + 1;
                 else
                     contador_segundos <= "1001";
                     contador_segundos_decenas <= contador_segundos_decenas - 1;
