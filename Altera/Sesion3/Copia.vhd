@@ -50,8 +50,6 @@ elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) E
             end if;
         when "001" => -- Estamos en Inicio
             if ( (bt = '1') and (contador_rebotes < 500000) ) then
-                contador_rebotes <= contador_rebotes + 1;
-                segundero <= segundero +1; --???
                 estado <= "001";
             elsif (bt = '0') then 
                 estado <= "000";
@@ -60,7 +58,6 @@ elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) E
             end if;
         when "010" => -- Estamos en Inicio
             if (bt = '1') then
-                segundero <= segundero + 1;
                 estado <= "010";
             elsif (bt = '0') then 
                 estado <= "011";
@@ -69,8 +66,6 @@ elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) E
             end if;
         when "011" => -- Estamos en Inicio
             if ( (bt = '1') and (contador_rebotes < 500000) ) then
-                contador_rebotes <= contador_rebotes + 1;
-                segundero <= segundero +1;
                 estado <= "011";
             elsif (bt = '0') then 
                 estado <= "000";
@@ -79,7 +74,6 @@ elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) E
             end if;
         when "101" => -- Estamos en Inicio
             if (bt = '1') then
-                segundero <= segundero +1;
                 estado <= "101";
             elsif ( (bt = '0') and (segundero < 50000000) ) then 
                 estado <= "110";
@@ -100,23 +94,23 @@ case estado is
     when "000" => 
         contador_rebotes <= 0;
         segundero <= 0;
-        salida <= "0";
-    when "001" =>
-        salida <= "0";
-    when "010" =>
+        salida <= '0';
+    when "001" | "011"  =>
+        contador_rebotes <= contador_rebotes + 1;
+        segundero <= segundero + 1;
+        salida <= '0';
+    when "010" | "101" =>
         contador_rebotes <= 0;
-        salida <= "0";
-    when "011" =>
-        salida <= "0";
-    when "101" =>
-        contador_rebotes <= 0;
-        salida <= "0";
+        segundero <= segundero + 1;
+        salida <= '0';
     when "110" =>
         contador_rebotes <= 0;
         segundero <= 0;
-        salida <= "1";
+        salida <= '1';
     when others => 
-        salida <='0';
+        contador_rebotes <= 0;
+        segundero <= 0;
+        salida <= '0';
 end case;
 
 case contador is
