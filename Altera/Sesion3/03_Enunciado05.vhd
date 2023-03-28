@@ -34,9 +34,9 @@ begin
 
 g_led(0)<=salida;
 inicio<=v_bt(0);
-bt<=v_bt(1);
+bt<=v_sw(1);
 
-process(inicio, g_clock_50)
+process(inicio, g_clock_50, bt)
 begin
 if (inicio='0') then 
    estado<="000";
@@ -50,44 +50,36 @@ elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) E
             end if;
         when "001" => -- Estamos en Inicio
             if ( (bt = '1') and (contador_rebotes < 500000) ) then
-                contador_rebotes <= contador_rebotes + 1;
-                segundero <= segundero +1; --???
                 estado <= "001";
-            elsif (bt = '0') then 
-                estado <= "000";
-            else
+            elsif ( (bt = '1') and (contador_rebotes = 500000) ) then
                 estado <= "010";
+            else
+                estado <= "000";
             end if;
         when "010" => -- Estamos en Inicio
             if (bt = '1') then
-                segundero <= segundero + 1;
                 estado <= "010";
-            elsif (bt = '0') then 
-                estado <= "011";
             else
-                estado <= "010";
+                estado <= "011";
             end if;
         when "011" => -- Estamos en Inicio
             if ( (bt = '1') and (contador_rebotes < 500000) ) then
-                contador_rebotes <= contador_rebotes + 1;
-                segundero <= segundero +1;
                 estado <= "011";
-            elsif (bt = '0') then 
-                estado <= "000";
+            elsif ( (bt = '1') and (contador_rebotes = 500000) ) then
+                estado <= "100";
             else
+                estado <= "000";
+            end if;
+        when "100" => -- Estamos en Inicio
+            if (bt = '1') then
+                estado <= "100";
+            elsif ( (bt = '0') and (segundero < 50000000) ) then 
                 estado <= "101";
+            else
+                estado <= "000";
             end if;
         when "101" => -- Estamos en Inicio
-            if (bt = '1') then
-                segundero <= segundero +1;
-                estado <= "101";
-            elsif ( (bt = '0') and (segundero < 50000000) ) then 
-                estado <= "110";
-            else
-                estado <= "000";
-            end if;
-        when "110" => -- Estamos en Inicio
-           estado <= "000"; 
+            estado <= "000"; 
         when others =>
             estado <= "000";
     end case;
@@ -100,23 +92,28 @@ case estado is
     when "000" => 
         contador_rebotes <= 0;
         segundero <= 0;
-        salida <= "0";
-    when "001" =>
-        salida <= "0";
-    when "010" =>
+        salida <= '0';
+    when "001" | "011"  =>
+        contador_rebotes <= contador_rebotes + 1;
+        segundero <= segundero + 1;
+        salida <= '0';
+    when "010" | "100" =>
         contador_rebotes <= 0;
-        salida <= "0";
-    when "011" =>
-        salida <= "0";
+        segundero <= segundero + 1;
+        salida <= '0';
     when "101" =>
-        contador_rebotes <= 0;
-        salida <= "0";
-    when "110" =>
+        if (contador < "1001") then 
+            contador <= contador + 1;
+        else
+            contador <= contador;
+        end if;
         contador_rebotes <= 0;
         segundero <= 0;
-        salida <= "1";
+        salida <= '1';
     when others => 
-        salida <='0';
+        contador_rebotes <= 0;
+        segundero <= 0;
+        salida <= '0';
 end case;
 
 case contador is
