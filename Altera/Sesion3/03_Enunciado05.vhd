@@ -27,14 +27,15 @@ signal bt: std_logic;
 signal salida: std_logic;
 signal estado: std_logic_vector (2 downto 0);
 signal contador: std_logic_vector (3 downto 0);
-signal contador_rebotes: integer range 0 to 50000;
+signal contador_rebotes: integer range 0 to 50000; -- Para que duren mínimo 1MS las pulsaciones, de manera que no sean rebotes
 signal segundero: integer range 0 to 50000000;
 
 begin
 
-g_led(0)<=salida;
+g_led(3)<=salida;
 inicio<=v_bt(0);
-bt<=v_sw(1);
+bt<=v_bt(1);
+g_led(2 downto 0)<= estado;
 
 process(inicio, g_clock_50, bt)
 begin
@@ -42,43 +43,49 @@ if (inicio='0') then
    estado<="000";
 elsif ( (g_clock_50 = '1') and (g_clock_50'event) ) then -- (Flanco de subida) Esta condición se evalúa como verdadera si la señal g_clock_50 es igual a '1' y ha ocurrido un evento en la señal g_clock_50. Un evento se produce en la señal g_clock_50 cuando cambia de valor, ya sea de '0' a '1' o de '1' a '0'. 
     case estado is
-        when "000" => -- Estamos en Inicio
-            if (bt = '1') then
+        when "000" => 
+            if (bt = '0') then
                 estado <= "001";
             else
                 estado <= "000";
             end if;
-        when "001" => -- Estamos en Inicio
-            if ( (bt = '1') and (contador_rebotes < 500000) ) then
+        when "001" => 
+            if ( (bt = '0') and (contador_rebotes < 50000) ) then
                 estado <= "001";
-            elsif ( (bt = '1') and (contador_rebotes = 500000) ) then
+            elsif ( (bt = '0') and (contador_rebotes = 50000) ) then
                 estado <= "010";
             else
                 estado <= "000";
             end if;
-        when "010" => -- Estamos en Inicio
-            if (bt = '1') then
+        when "010" => 
+            if (bt = '0') then
                 estado <= "010";
             else
                 estado <= "011";
             end if;
-        when "011" => -- Estamos en Inicio
-            if ( (bt = '1') and (contador_rebotes < 500000) ) then
-                estado <= "011";
-            elsif ( (bt = '1') and (contador_rebotes = 500000) ) then
-                estado <= "100";
-            else
-                estado <= "000";
-            end if;
-        when "100" => -- Estamos en Inicio
+        when "011" => 
             if (bt = '1') then
+                estado <= "011";
+            else
                 estado <= "100";
-            elsif ( (bt = '0') and (segundero < 50000000) ) then 
+            end if;
+        when "100" => 
+            if ( (bt = '0') and (contador_rebotes < 50000) ) then
+                estado <= "100";
+            elsif ( (bt = '0') and (contador_rebotes = 50000) ) then
                 estado <= "101";
             else
                 estado <= "000";
             end if;
-        when "101" => -- Estamos en Inicio
+        when "101" => 
+            if (bt = '0') then
+                estado <= "101";
+            elsif ( (bt = '1') and (segundero <= 50000000) ) then 
+                estado <= "110";
+            else
+                estado <= "000";
+            end if;
+        when "110" => 
             estado <= "000"; 
         when others =>
             estado <= "000";
@@ -89,19 +96,23 @@ end process;
 process(estado)
 begin
 case estado is
-    when "000" => 
+    when "000"  => 
         contador_rebotes <= 0;
         segundero <= 0;
         salida <= '0';
-    when "001" | "011"  =>
+    when "001" | "100"  =>
         contador_rebotes <= contador_rebotes + 1;
         segundero <= segundero + 1;
         salida <= '0';
-    when "010" | "100" =>
+    when "010" | "101" =>
         contador_rebotes <= 0;
         segundero <= segundero + 1;
         salida <= '0';
-    when "101" =>
+    when "011"  => 
+        contador_rebotes <= 0;
+        segundero <= segundero + 1;
+        salida <= '0';
+    when "110" =>
         if (contador < "1001") then 
             contador <= contador + 1;
         else
@@ -111,8 +122,6 @@ case estado is
         segundero <= 0;
         salida <= '1';
     when others => 
-        contador_rebotes <= 0;
-        segundero <= 0;
         salida <= '0';
 end case;
 
