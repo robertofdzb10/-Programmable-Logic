@@ -34,14 +34,20 @@ signal minutos_decenas: std_logic_vector (3 downto 0);
 signal horas: std_logic_vector (3 downto 0);
 signal horas_decenas: std_logic_vector (1 downto 0);
 
+signal inicio_alarma: std_logic;
+signal bt_inicio_alarma: std_logic;
+signal contador_base: integer range 0 to 50000000;
+
+
 
 begin
 
 inicio<=v_bt(0);
 bt<=v_bt(1);
+bt_inicio_alarma<=v_bt(2);
 g_led(2 downto 0)<= estado;
 
-process(inicio, bt, g_clock_50) -- Automata para poner la alarma
+process(inicio, bt, g_clock_50) -- Autómata para poner la alarma
 begin
     if (inicio = '0') then
         estado <= "000";
@@ -52,29 +58,29 @@ begin
             when "000" =>
                 flt <= 0;
                 sal <= '0';
-                if (bt = '1') then
+                if (bt = '0') then
                     estado <= "001";
-                elsif (bt = '0') then
+                elsif (bt = '1') then
                     estado <= "000";
                 end if;
             when "001" =>
                 flt <= flt + 1;
                 sal <= '0';
-                if ( (bt = '1') and (flt < 50000) ) then
+                if ( (bt = '0') and (flt < 50000) ) then
                     estado <= "001";
-                elsif ( (bt = '1') and (flt = 50000) ) then
+                elsif ( (bt = '0') and (flt = 50000) ) then
                     estado <= "010";
-                elsif (bt = '0') then
+                elsif (bt = '1') then
                     estado <= "000";
                 end if;
             when "010" =>
                 flt <= flt + 1;
                 sal <= '0';
-                if ( (bt = '1') and (flt < 50000000) ) then
-                    estado <= "001";
-                elsif ( (bt = '1') and (flt = 50000000) ) then
+                if ( (bt = '0') and (flt < 50000000) ) then
                     estado <= "010";
-                elsif (bt = '0') then
+                elsif ( (bt = '0') and (flt = 50000000) ) then
+                    estado <= "100";
+                elsif (bt = '1') then
                     estado <= "011";
                 end if;
             when "011" =>
@@ -84,19 +90,15 @@ begin
             when "100" =>
                 flt <= 0;
                 sal <= '1';
-                if (bt = '1') then
-                    estado <= "101";
-                elsif (bt = '0') then
-                    estado <= "011";
-                end if;
+                estado <= "101";
             when "101" =>
                 flt <= flt + 1;
                 sal <= '0';
-                if ( (bt = '1') and (flt < (50000000 / 4) ) ) then
+                if ( (bt = '0') and (flt < 5000000 ) ) then
                     estado <= "101";
-                elsif ( (bt = '1') and (flt = (50000000 / 4) ) ) then
+                elsif ( (bt = '0') and (flt = 5000000 ) ) then
                     estado <= "100";
-                elsif (bt = '0') then
+                elsif (bt = '1') then
                     estado <= "011";
                 end if;
             when others =>
@@ -107,7 +109,20 @@ begin
     end if;
 end process;
 
-process(inicio, g_clock_50, sal)
+process(inicio,g_clock_50)
+begin
+    if (inicio = '0') then
+        contador_base <= 0;
+    elsif (rising_edge (g_clock_50)) then
+        if (contador_base < 50000000) then
+            contador_base <= contador_base + 1;
+        else 
+            contador_base <= 0;
+        end if;
+    end if;
+end process;
+
+process(inicio, sal, g_clock_50, bt_inicio_alarma)
 begin
     if (inicio = '0') then
         segundos <= "0000";
@@ -116,38 +131,72 @@ begin
         minutos_decenas  <= "0000";
         horas <= "0000";
         horas_decenas <= "00";
-    elsif (sal = '1') then
-        if ( segundos = "1001" ) then 
-            segundos <= "0000";
-            if (segundos_decenas = "0101" ) then
-                segundos_decenas <= "0000";
-                if (minutos = "1001") then
-                    minutos <= "0000";
-                    if (minutos_decenas = "0101" ) then
-                        minutos_decenas <= "0000";
-                        if ((horas_decenas = "10") and (horas = "0011"))  then
-                            horas <= "0000";
-                            horas_decenas <= "00";
-                        elsif ( horas = "1001")  then
-                            horas <= "0000";
-                            horas_decenas <= horas_decenas + 1;
+        inicio_alarma <= '0';
+    elsif (bt_inicio_alarma = '0') then
+        inicio_alarma <= '1';
+    elsif (rising_edge (g_clock_50)) then -- Va por flancos de relos, de manera que solo entra una vez aquí, por que sol oesta sal=1 activo un flanco de reloj
+        if (sal = '1') then
+            if ( segundos = "1001" ) then 
+                segundos <= "0000";
+                if (segundos_decenas = "0101" ) then
+                    segundos_decenas <= "0000";
+                    if (minutos = "1001") then
+                        minutos <= "0000";
+                        if (minutos_decenas = "0101" ) then
+                            minutos_decenas <= "0000";
+                            if ((horas_decenas = "10") and (horas = "0011"))  then
+                                horas <= "0000";
+                                horas_decenas <= "00";
+                            elsif ( horas = "1001")  then
+                                horas <= "0000";
+                                horas_decenas <= horas_decenas + 1;
+                            else
+                                horas <= horas + 1;
+                            end if;
                         else
-                            horas <= horas + 1;
+                            minutos_decenas <= minutos_decenas + 1;
                         end if;
                     else
-                        minutos_decenas <= minutos_decenas + 1;
-                    end if;
+                        minutos <= minutos + 1;
+                    end  if;
                 else
-                    minutos <= minutos + 1;
-                end  if;
-            else
-                segundos_decenas <= segundos_decenas + 1;
+                    segundos_decenas <= segundos_decenas + 1;
+                end if;
+            else 
+                segundos <= segundos + 1;
             end if;
-        else 
-            segundos <= segundos + 1;
+        elsif ((inicio_alarma = '1') and (contador_base = 50000000)) then
+            if ( segundos = "0000" ) then 
+                segundos <= "1001";
+                if (segundos_decenas = "0000" ) then
+                    segundos_decenas <= "0101";
+                    if (minutos = "0000") then
+                        minutos <= "1001";
+                        if (minutos_decenas = "0000" ) then
+                            minutos_decenas <= "0101";
+                            if ((horas = "0000") and (horas_decenas /= "0000")) then
+                                horas_decenas <= horas_decenas - 1;
+                            elsif ((horas = "0000") and (horas_decenas = "0000")) then
+                            else
+                                horas <= horas - 1;
+                            end if;
+                        else
+                            minutos_decenas <= minutos_decenas - 1;
+                        end if;
+                    else
+                        minutos <= minutos - 1;
+                    end  if;
+                else
+                    segundos_decenas <= segundos_decenas - 1;
+                end if;
+            else 
+                segundos <= segundos - 1;
+            end if;
+        else
         end if;
     end if;
 end process;
+
 
 process(segundos,segundos_decenas,minutos, minutos_decenas, horas, horas_decenas)
 begin
@@ -163,7 +212,7 @@ begin
       when "0111" => g_hex0 <="0001111";
       when "1000" => g_hex0 <="0000000";
       when "1001" => g_hex0 <="0001100";
-      when others => g_hex0 <="1111111";
+      when others => g_hex0 <="0000001";
    end case;
 
    case segundos_decenas is
@@ -177,7 +226,7 @@ begin
       when "0111" => g_hex1 <="0001111";
       when "1000" => g_hex1 <="0000000";
       when "1001" => g_hex1 <="0001100";
-      when others => g_hex1 <="1111111";
+      when others => g_hex1 <="0000001";
    end case;
 
    case minutos is
@@ -191,7 +240,7 @@ begin
       when "0111" => g_hex2 <="0001111";
       when "1000" => g_hex2 <="0000000";
       when "1001" => g_hex2 <="0001100";
-      when others => g_hex2 <="1111111";
+      when others => g_hex2 <="0000001";
    end case;
 
    case minutos_decenas is
@@ -205,7 +254,7 @@ begin
       when "0111" => g_hex3 <="0001111";
       when "1000" => g_hex3 <="0000000";
       when "1001" => g_hex3 <="0001100";
-      when others => g_hex3 <="1111111";
+      when others => g_hex3 <="0000001";
    end case;
 
    case horas is
@@ -219,13 +268,14 @@ begin
       when "0111" => g_hex4 <="0001111";
       when "1000" => g_hex4 <="0000000";
       when "1001" => g_hex4 <="0001100";
-      when others => g_hex4 <="1111111";
+      when others => g_hex4 <="0000001";
    end case;
 
    case horas_decenas is
       when "00" => g_hex5 <="0000001";
       when "01" => g_hex5 <="1001111";
-      when others => g_hex5 <="0010010";
+      when "10" => g_hex5 <="0010010";
+      when others => g_hex5 <="0000001";
    end case;
 
 end process;
