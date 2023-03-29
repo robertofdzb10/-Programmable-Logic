@@ -46,6 +46,7 @@ inicio<=v_bt(0);
 bt<=v_bt(1);
 bt_inicio_alarma<=v_bt(2);
 g_led(2 downto 0)<= estado;
+g_led(4)<= inicio_alarma;
 
 process(inicio, bt, g_clock_50) -- Autómata para poner la alarma
 begin
@@ -166,7 +167,9 @@ begin
                 segundos <= segundos + 1;
             end if;
         elsif ((inicio_alarma = '1') and (contador_base = 50000000)) then
-            if ( segundos = "0000" ) then 
+            if ((segundos = "0000") and (segundos_decenas = "0000" ) and (minutos = "0000") and (minutos_decenas = "0000")  and (horas = "0000") and (horas_decenas = "0000")) then
+                inicio_alarma <= '0';
+            elsif ( segundos = "0000" ) then 
                 segundos <= "1001";
                 if (segundos_decenas = "0000" ) then
                     segundos_decenas <= "0101";
@@ -176,7 +179,6 @@ begin
                             minutos_decenas <= "0101";
                             if ((horas = "0000") and (horas_decenas /= "0000")) then
                                 horas_decenas <= horas_decenas - 1;
-                            elsif ((horas = "0000") and (horas_decenas = "0000")) then
                             else
                                 horas <= horas - 1;
                             end if;
