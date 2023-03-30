@@ -21,7 +21,6 @@ end main;
 architecture Behavioral of main is
 --aqui comienzan las signals
 
---signals del multiplexado del 7-segmentos
 signal inicio: std_logic;
 signal bt: std_logic;
 signal unidades_piso: std_logic_vector (3 downto 0);
@@ -29,7 +28,7 @@ signal decenas_piso: std_logic_vector (3 downto 0);
 signal decenas_null: std_logic;
 
 signal estado: std_logic_vector (2 downto 0);
-signal flt: integer range 0 to 50000000;
+signal flt: integer range 0 to 500000000;
 signal flt_2: integer range 0 to 500000;
 signal sal: std_logic;
 
