@@ -103,9 +103,9 @@ begin
                 flt_2 <= 0;
                 if (bt = '0') then
                     estado <= "101";
-                elsif ((bt = '1') and (flt < 50000000)) then
+                elsif ((bt = '1') and (flt <= 50000000)) then
                     estado <= "011"; 
-                elsif ((bt = '1') and (flt = 50000000)) then
+                elsif ((bt = '1') and (flt > 50000000)) then
                     estado <= "000"; 
                 end if;
             when "011" =>
