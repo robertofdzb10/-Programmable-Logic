@@ -42,25 +42,22 @@ millares<=v_sw(15 downto 12);
 
 process(unidades, decenas, centenas, millares)
 begin
-    if (inicio = '0') then
-        millares_null <= '0';
-        centenas_null <= '0';
-        decenas_null <= '0';
-    end if;
-    if (millares = "0000") then
-        millares_null <= '1';
-        if (centenas = "0000") then
-            centenas_null <= '1';
-            if (decenas = "0000") then
-                decenas_null <= '1';
+    if (rising_edge(g_clock_50)) then
+        if (millares = "0000") then
+            millares_null <= '1';
+            if (centenas = "0000") then
+                centenas_null <= '1';
+                if (decenas = "0000") then
+                    decenas_null <= '1';
+                else 
+                    decenas_null <= '0';
+                end if;
             else 
-                decenas_null <= '0';
+                centenas_null <= '0';
             end if;
         else 
-            centenas_null <= '0';
+            millares_null <= '0';
         end if;
-    else 
-        millares_null <= '0';
     end if;
 end process;
 
