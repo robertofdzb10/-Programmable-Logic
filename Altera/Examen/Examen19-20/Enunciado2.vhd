@@ -87,7 +87,7 @@ begin
     end if;
 end process;
 
-process(g_clock_50, decimas_segundo, unidades_segundo, decenas_segundo, centenas_segundo)
+process(g_clock_50, decimas_segundo, unidades_segundo, decenas_segundo, centenas_segundo, centenas_null, decenas_null, unidades_null)
 begin
     if (rising_edge(g_clock_50)) then
         if (centenas_segundo = "0000") then
