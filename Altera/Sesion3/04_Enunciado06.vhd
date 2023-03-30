@@ -135,7 +135,7 @@ begin
         inicio_alarma <= '0';
     elsif (bt_inicio_alarma = '0') then
         inicio_alarma <= '1';
-    elsif (rising_edge (g_clock_50)) then -- Va por flancos de relos, de manera que solo entra una vez aquí, por que sol oesta sal=1 activo un flanco de reloj
+    elsif (rising_edge (g_clock_50)) then -- Va por flancos de reloj, de manera que solo entra una vez aquí, por que sol oesta sal=1 activo un flanco de reloj
         if (sal = '1') then
             if ( segundos = "1001" ) then 
                 segundos <= "0000";
