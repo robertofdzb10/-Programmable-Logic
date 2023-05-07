@@ -77,6 +77,8 @@ begin
                 else
                     unidades <= unidades + 1;
                 end if;
+            elsif (decimas = "0010" and unidades = "0001") then
+                decimas <= decimas + 2;
             else 
                 decimas <= decimas + 1;
             end if;
