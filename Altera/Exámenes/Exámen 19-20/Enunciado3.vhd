@@ -35,7 +35,7 @@ begin
 inicio<=v_bt(0);
 boton<=v_bt(1);
 
-
+--Automata
 process(g_clock_50,inicio, boton)
 begin
     if (inicio = '0') then
@@ -74,7 +74,7 @@ begin
     end if;
 end process;
 
-
+--Lógica para subir de piso
 process(g_clock_50, boton, pulso)
 begin
     if (inicio = '0') then
@@ -98,6 +98,7 @@ begin
     end if;
 end process;
 
+--Siete segmentos
 process(unidades_piso, decenas_piso)
 begin
     g_hex2<="1111111";
