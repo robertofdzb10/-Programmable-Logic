@@ -10,7 +10,7 @@ Port (
    clk: in std_logic;
    inicio: in std_logic;
    enableSw: in std_logic;
-   enableSwS: in std_logic;
+   enableSwS: in std_logic; -- Switch para activar el stepper
    enable_seg: out std_logic_vector(3 downto 0);
    segmentos: out std_logic_vector(6 downto 0);
    modo: in std_logic_vector(1 downto 0);
@@ -22,8 +22,7 @@ Port (
    btnL: in std_logic;
    btnR: in std_logic;   
    
-   cale: out std_logic;
-   
+
    dcEnc: in std_logic_vector (1 downto 0);
    pwmEnt: in std_logic_vector(3 downto 0);
    pwmPos: out std_logic;
@@ -50,7 +49,6 @@ architecture Behavioral of main is
 
 -- Signals para el control
 signal rDist: integer range 0 to 1023;
-signal rTemp: integer range 0 to 1023;
 signal rHall: integer range 0 to 1023;
 signal riesgo: std_logic;
 
@@ -97,22 +95,6 @@ signal paso_paso_aux: std_logic; -- Para generar la salida
 signal tope_frecuencia_paso_paso: integer range 0 to 1000000000; -- Para controlar la velocidad
 signal frecuencia_paso_paso_entero: integer range 0 to 10000;
 
--- Signal para PT100
-TYPE STATE_TYPE is (WAIT_800ms, RESET, PRESENCE, SEND, WRITE_BYTE, WRITE_LOW, WRITE_HIGH, GET_DATA, READ_BIT);
-SIGNAL state: STATE_TYPE;
-SIGNAL data	: STD_LOGIC_VECTOR(71 downto 0);
-SIGNAL S_reset	: STD_LOGIC;
-SIGNAL i			: INTEGER RANGE 0 TO 799999;
-SIGNAL write_command : STD_LOGIC_VECTOR(7 downto 0);
-SIGNAL presence_signal		: STD_LOGIC;
-SIGNAL WRITE_BYTE_CNT	: INTEGER RANGE 0 TO 8	:= 0;	-- Citac pro odesilany bajt
-SIGNAL write_low_flag	: INTEGER RANGE 0 TO 2	:= 0;	-- Priznak pozice ve stavu WRITE_LOW
-SIGNAL write_high_flag	: INTEGER RANGE 0 TO 2	:= 0;	--	Priznak pozice ve stavu WRITE_HIGH
-SIGNAL read_bit_flag		: INTEGER RANGE 0 TO 3	:= 0;	-- Priznak pozice ve stavu READ_BIT
-SIGNAL GET_DATA_CNT		: INTEGER RANGE 0 TO 72	:= 0;	-- Citac pro pocet prectenych bitu
-SIGNAL CONT_AUX: integer range 0 to 100; 				
-signal dataOut			: STD_LOGIC_VECTOR(71 downto 0);
-
 -- Signals para bin to bcd
 signal vector_aux: std_logic_vector (29 downto 0);
 signal estado: std_logic_vector (1 downto 0);
@@ -130,14 +112,14 @@ signal cont: integer range 0 to 100000000;
 -- Signals para intercomunicar Cajas
 signal relojData: std_logic_vector(15 downto 0);
 signal TempData: std_logic_vector(8 downto 0);
-signal distData: std_logic_vector(13 downto 0);
+signal distData: std_logic_vector(13 downto 0); -- Distancia a obtener
 signal to7seg: std_logic_vector(15 downto 0);
 signal muxSensores: std_logic_vector(13 downto 0);
 signal bcdData: std_logic_vector(15 downto 0);
 signal selLSB: std_logic_vector(1 downto 0);
 signal hallData: std_logic_vector(13 downto 0);
 signal sel: std_logic_vector(2 downto 0);
-signal rDistData: std_logic_vector(14 downto 0);
+signal rDistData: std_logic_vector(14 downto 0); -- Distancia real
 signal der: std_logic;
 signal izq: std_logic;
 signal menos: std_logic;
@@ -318,37 +300,25 @@ end process;
 
 ----------- CONTROL -----------
 
--- Generacion de lineas de control
+-- Process para los modos de control
 process(inicio, clk, modo)
 begin
 if inicio = '1'then
     controlSt <= "00";
 elsif rising_edge(clk) then
 case modo is
-    when "00"=> -- Modo ida y vuelta continuo
-        cale <= '0';
+    when "00"=> -- Modo Uno,  Ida y vuelta continuo del stepper
         controlSt <= "11"; 
         controlDC <= '0';
-    when "01"=> -- Ida y vuelta hasta temperatura de riesgo
+    when "10" =>    -- Modo Dos, poner stepper a distancia especificada
         controlDC <= '0';
-        if riesgo = '1' then
-        controlSt <= "00";
-        cale <= '0';
-        else
-        controlSt <= "11";
-        cale <= '1';
-        end if;
-    when "10" =>    -- Poner stepper a distancia especificada
-        controlDC <= '0';
-        cale <= '0';
         if(rDist > distData)then
-            controlSt <= "01";
+            controlSt <= "01"; -- Movemos el stepper hacia atras
         elsif rDist < distData then
-            controlSt <= "10";
+            controlSt <= "10"; -- Movemos el stepper hacia adelante
         else controlSt <= "00";
         end if;
-    when "11" =>
-        cale <= '0';
+    when "11" => -- Modo tres, activar el DC
         controlSt <= "00"; 
         controlDC <= '1';
     when others => controlSt <= "00";
@@ -356,26 +326,20 @@ end case;
 end if;
 end process;
 
+
 -- Insercion de datos por botones
 process(clk, inicio, sel)
 begin
 if inicio = '1' then
-    riesgo <= '0';
 elsif rising_edge(clk) then
     case sel is
-    when "101" =>
-        if mas = '1' then
-            rTemp <= rTemp +1;
-        elsif menos = '1'then
-            rTemp <= rTemp -1;
-        end if;
-    when "110" => 
+    when "011" => -- Cambiar la distancia manualmente (Anterior valor 101)
         if mas = '1' then
             rDist <= rDist +1;
         elsif menos = '1'then
             rDist <= rDist -1;
         end if;
-    when "111" => 
+    when "100" => -- Cambiar la velocidad manualmente (Anterior valor 111) (Probar pendiente)
         if paro = '0'then
         if mas = '1' then
             rHall <= rHall +1;
@@ -386,14 +350,11 @@ elsif rising_edge(clk) then
     when others =>
     end case;
 end if;
-if(TempData > rTemp)then
-    riesgo <= '1';
-else
-    riesgo <= '0';
-end if;
 end process;
 
--- Generación de sel
+
+
+-- Generación de sel, process para ir variando el valor del sel con los botones
 process(clk, inicio)
 begin
 if inicio = '1' then
@@ -407,53 +368,56 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
+
+
 --- Process para pwmDC
 process(controlDC, pwmEnt, clk, inicio)
 begin
-if controlDC = '0'then
+if controlDC = '0' then -- Si el contorl DC esta a cero, introducimos manualmete el tope
     case pwmEnt is
     when "0000" => tope <= 0;
-    when "0001" => tope <= 50000;
-    when "0010" => tope <= 100000;
-    when "0011" => tope <= 150000;
-    when "0100" => tope <= 200000;
-    when "0101" => tope <= 250000;
-    when "0110" => tope <= 300000;
-    when "0111" => tope <= 350000;
-    when "1000" => tope <= 400000;
-    when "1001" => tope <= 450000;
-    when "1010" => tope <= 500000;
+    when "0001" => tope <= 50 000;
+    when "0010" => tope <= 100 000;
+    when "0011" => tope <= 150 000;
+    when "0100" => tope <= 200 000;
+    when "0101" => tope <= 250 000;
+    when "0110" => tope <= 300 000;
+    when "0111" => tope <= 350 000;
+    when "1000" => tope <= 400 000;
+    when "1001" => tope <= 450 000;
+    when "1010" => tope <= 500 000;
     when others => tope <= 0;
     end case;
-else
-    --PID
+-- Pendiente
+else -- Sino, lo hacemos de manera automática, mediante una simulación de un controlador
     if inicio = '1'then 
         error <= 0;
     elsif rising_edge(clk)then
         error <= (rHall - rpm) *10;
         if error > 50000 then
             tope <= 50000;
-        
         end if;
     end if;
 end if;
+-- Pendiente
 
 end process;
 
 
+-- Process para el sentido del DC (Pediente de entender donde se usa)
 process(sentido)
 begin
-if(sentido = '0')then
-    pwmPos <= pwm;
+if(sentido = '0')then -- Activamos el sentido positivo del motor DC
+    pwmPos <= pwm; 
     pwmNeg <= '0';
-else
+else  -- Activamos el sentido negativo del motor DC
     pwmPos <= '0';
     pwmNeg <= pwm;
 end if;
 end process;
 
 
-
+--Automata moviento del motor DC en función de los topes
 process(inicio, clk)
 begin
 if inicio = '1' then
@@ -462,50 +426,45 @@ if inicio = '1' then
 elsif rising_edge(clk)then
     case estadoPWM is
     when "000" => 
+        pwm <= '0';
         contPWM <= 0;
         if(tope = 0) then
             estadoPWM <= "001";
         else
             estadoPWM <= "010";
         end if;
-    when "001" =>                                                                                                                                                                                            
+    when "001" => 
+        pwm <= '0';                                                                                                                                                                                           
         contPWM <= 1;
         estadoPWM <= "011";
     when "010" => 
+        pwm <= '1';
         contPWM <= 1;
         estadoPWM <= "100";   
      when "011" =>
+        pwm <= '0';
         contPWM <= contPWM +1;
-        if (contPWM = 500000 and tope = 0)then
+        if (contPWM = 500 000 and tope = 0)then
             estadoPWM <= "001";
-        elsif (contPWM = 500000)then
+        elsif (contPWM = 500 000)then
             estadoPWM <= "010";
         end if;
      when "100" =>
+        pwm <= '1';
         contPWM <= contPWM +1;
-        if (contPWM = tope and tope = 500000)then
+        if (contPWM = tope and tope = 500 000)then
             estadoPWM <= "010";
         elsif (contPWM = tope)then
             estadoPWM <= "011";
         end if;
      when others => 
+        pwm <= '0';
         contPWM <= 0;
         estadoPWM <= "000";
     end case;
 end if;
 end process;
 
-process(estadoPWM)
-begin
-case estadoPWM is
-when "000" => pwm <= '0';
-when "001" => pwm <= '0';
-when "010" => pwm <= '1';
-when "011" => pwm <= '0';
-when "100" => pwm <= '1';
-when others => pwm <= '0';
-end case;
-end process;
 
 --- Process para hallDC
 --- Cuenta las revoluciones del motor cada segundo y luego las pasa a la variable rev_per_seg
@@ -522,70 +481,60 @@ if rising_edge(clk) then
     else
         if contador_ticks = 100 then
             case estado_hall is
-                when "000" => -- Estado_hall inicial
-                   
+                when "000" => -- Estado_hall inicial 
                     cont_microsDC <= 0;
-                   
                     if  hall = "00" then
                         estado_hall <= "001";
-                    end if;
-                   
+                    end if; 
                 when "001" =>
                     cont_microsDC <= cont_microsDC + 1;
                     rpm <= rpm;
-                   
                     if cont_microsDC >= 60000 then
                         rpm <= 0;
                         estado_hall <= "000";
                     elsif hall = "01" then
-                        sentidoGiro <= '0';
+                        sentidoGiro <= '0'; -- Sentido de giro positivo
                         estado_hall <= "010";
                     elsif hall = "10" then
-                        sentidoGiro <= '1';
+                        sentidoGiro <= '1'; -- Sentido de giro negativo
                         estado_hall <= "011";
-                    end if;
-                   
+                    end if;       
                  when "010" =>
-                   cont_microsDC <= cont_microsDC + 1;
-                   
+                   cont_microsDC <= cont_microsDC + 1;     
                     if cont_microsDC >= 60000 then
                         rpm <= 0;
                         estado_hall <= "000";
                     elsif hall = "00" then
                         estado_hall <= "100";
-                    end if;
-                   
+                    end if;       
                  when "011" =>
-                    cont_microsDC <= cont_microsDC + 1;
-                   
+                    cont_microsDC <= cont_microsDC + 1;  
                     if cont_microsDC >= 60000 then
                         rpm <= 0;
                         estado_hall <= "000";
                     elsif hall = "00" then
                         estado_hall <= "100";
-                    end if;
-               
+                    end if; 
                 when "100" =>
-                    aux_rpm <= (60000000 / (cont_microsDC * 8 * 120));
-                    if cont_hall = 100 and (aux_rpm < rpm - 2 or aux_rpm > rpm + 2) then
+                    aux_rpm <= (60 000 000 / (cont_microsDC * 8 * 120));
+                    -- En este caso, la velocidad del motor se actualiza después de 100 mediciones, lo que puede ayudar a reducir la cantidad de actualizaciones innecesarias y filtrar posibles variaciones o ruido en la señal
+                    if cont_hall = 100 and (aux_rpm < rpm - 2 or aux_rpm > rpm + 2) then -- Solo actualizamos el rpm si el nuevo valor difiere en valor absoluto del anterior en má de dos unidades, para evitar cambios absurdos
                         rpm <= aux_rpm;
                         cont_hall <= 0;
                     else
                         cont_hall <= cont_hall + 1;
                     end if;
-                    estado_hall <= "000";
-                   
+                    estado_hall <= "000";   
                 when others =>
                     estado_hall <= "000";
-                end case;
-
+                 end case;
             contador_ticks <= 0;
         else
             contador_ticks <= contador_ticks + 1;
         end if;
     end if;
 end if;
-if paro = '0' then
+if paro = '0' then -- Sino esta parado, sacamos la velocidad por pantalla
 hallData <= std_logic_vector(to_unsigned(rpm, 14));
 end if;
 end process;
@@ -613,7 +562,7 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
--- Generador del trigger
+-- Generador del trigger, creamos un pulso de disparo para el sensor HC-SR04
 process(cont_micros)
 begin
 if cont_micros<10 then
@@ -629,11 +578,13 @@ begin
 if inicio='1' then
     cont_echo<=0;
 elsif rising_edge(clk) then
+    --  Para garantizar que el contador de eco comience desde cero al inicio de cada ciclo de 60 ms. 
     if cont_micros=0 then
         cont_echo<=0;
     else
+        -- El código garantiza que el contador de eco sólo se incremente en el momento específico del ciclo cuando el sensor está recibiendo el eco (ciclo de 60 ms)
         if cont_baseDist=0 then
-            if echo='1' then
+            if echo='1' then -- Si esta reciviendo echo
                 cont_echo<=cont_echo+1;
             end if;
         end if;
@@ -647,56 +598,57 @@ begin
 if inicio='1' then
     distancia_entero<=0;
 elsif rising_edge(clk) then
-    if cont_micros=60000 then
-        distancia_entero<=cont_echo/58;
+    if cont_micros=60000 then -- Hacemos una medición cada 60ms
+        distancia_entero<=cont_echo/58; -- Según la fórmula proporcionada en la descripción del sensor
     end if;
 end if;
 end process; 
-distData <= "0000" & std_logic_vector(to_unsigned(distancia_entero, 10));
+
+distData <= "0000" & std_logic_vector(to_unsigned(distancia_entero, 10)); -- Sacarlo por pantalla
 
 
 --- Process para stepper
-frecuencia_paso_paso_entero<=to_integer(unsigned(sw & "00000"));
+frecuencia_paso_paso_entero<=to_integer(unsigned(sw & "00000")); --Mediante el sw se le introduce el valor máximo de frecuencia para el motor paso a paso
 tope_frecuencia_paso_paso<=(100000000/frecuencia_paso_paso_entero)/2;
 
 --- Control de Stepper
 process(clk, inicio, controlST)
 begin 
 if inicio = '1' then
-    dirAux <= '0';
+    dirAux <= '0'; -- La dirección en la que el motor girará, horaria (clockwise) y antihoraria (counterclockwise).
     enableSteper <= enableSwS;
 elsif rising_edge(clk) then
     case controlSt is
     when "00" =>    -- Parado
-        enableSteper <= '0';
+        enableSteper <= '0'; -- El enable del stepper se pone a 1 si la velocidad es mayor que 0.
     when "01" =>    -- En direccion calle
      dirAux <= '1';
-     if(fc1Calle = '1')then
+    if(fc1Calle = '1') then -- Si ya hemos llegado al destino, apgamos el stepper
         enableSteper <= '0';
-        else
+    else
         enableSteper <= enableSwS;
         end if;
     when "10" =>    -- En direccion placa
         dirAux <= '0';
-        if(fc2Tarj = '1')then
-        enableSteper <= '0';
+        if(fc2Tarj = '1')then -- Si hemos llegado a la tarjeta
+            enableSteper <= '0';
         else
-        enableSteper <= enableSwS;
+            enableSteper <= enableSwS;
         end if;
     when "11" =>    -- En las 2 direcciones
         enableSteper <= enableSwS;     
-    if(fc2Tarj = '0' and fc1Calle = '0')then
-        dirAux <= dirAux;
+    if(fc2Tarj = '0' and fc1Calle = '0')then --Si las dos estan a cero, continuamos en la dirección que fueramos
+        dirAux <= dirAux; 
     else
         if(fc2Tarj = '1')then
-            dirAux <= '1';
+            dirAux <= '1'; -- Giramos en dirección calle
         else
-            dirAux <= '0';
+            dirAux <= '0'; --Giramos en dirección placa
         end if;
     end if;
     when others =>
-       dirAux <= '0';
-    enableSteper <= enableSwS; 
+        dirAux <= '0';
+        enableSteper <= enableSwS; 
     end case;
 end if;
 end process;
@@ -727,244 +679,15 @@ dir<=dirAux;
 process(clk, enableSw)
 begin
 if(rising_edge(clk))then
-    if(enableSw = '1')then
-        step<=paso_paso_aux;
+    if(enableSw = '1')then 
+        step<=paso_paso_aux; -- Cuando la señal step cambia de estado (por ejemplo, de '0' a '1' o de '1' a '0'), el motor realiza un paso en la dirección especificada por la señal dir (dirección)
     else
         step <= '0';
     end if;
 end if;
 end process;
 
---- Process para PT100
-process(clk)
-CONSTANT PRESENCE_ERROR_DATA: STD_LOGIC_VECTOR(71 downto 0):= "111111111111111111111111111111111111111111111111111111111111111111111111";
-
-	VARIABLE bit_cnt: INTEGER RANGE 0 TO 71;	
-	VARIABLE flag: INTEGER RANGE 0 TO 5;		
-
-	begin
-		if rising_edge(clk) and cont_aux=0 then
-			case	state is
-				when RESET =>																
-					S_reset <= '0';														
-					if (i = 0) then 
-						ds_data_bus <= '0';												
-					elsif (i = 485) then 
-						ds_data_bus <= 'Z'; 											
-					elsif (i = 550) then
-						presence_signal <= ds_data_bus;								
-					elsif (i = 1000) then 
-						state <= PRESENCE;										
-					end if;
-			
-				when PRESENCE =>														
-					-- detekce senzoru na sbernici
-					if (presence_signal = '0' and ds_data_bus = '1') then		
-						S_reset <= '1';													
-						state	  <= SEND;													
-					else																		
-						S_reset	<= '1';													
-						dataOut 	<= PRESENCE_ERROR_DATA;								
-						crc_en	<= '1';												
-						state		<= WAIT_800ms;											-
-					end if;
-
-				when SEND =>															
-					if (flag = 0) then													
-						flag := 1;
-						write_command <="11001100"; 									
-						state 		  <= WRITE_BYTE;								
-					elsif (flag = 1) then												
-						flag := 2;
-						write_command <="01000100"; 									
-						state 		  <= WRITE_BYTE;									
-					elsif (flag = 2) then												
-						flag := 3;	
-						state <= WAIT_800ms; 											
-					elsif (flag = 3) then												
-						flag := 4;
-						write_command <="11001100"; 								
-						state			  <= WRITE_BYTE;									
-					elsif (flag = 4) then												
-						flag := 5;
-						write_command <="10111110"; 									
-						state			  <= WRITE_BYTE;								
-					elsif (flag = 5) then											
-						flag := 0;														
-						state <= GET_DATA;											
-					end if;
-
-				when  WAIT_800ms =>													
-					CRC_en <= '0';														
-					S_reset <= '0';														
-					if (i = 799) then													
-						S_reset <='1';														
-						state	  <= RESET;												
-					end if;
-
-				when GET_DATA =>															
-					case GET_DATA_CNT is												
-						when 0 to 71=>													
-							ds_data_bus  <= '0';									
-							GET_DATA_CNT <= GET_DATA_CNT + 1;						
-							state 		 <= READ_BIT;								
-						when 72=>												
-							bit_cnt := 0;													
-							GET_DATA_CNT <=0;										
-							dataOut 	 <= data(71 downto 0);						
-							CRC_en 		 <= '1';											
-							state 		 <= WAIT_800ms;						
-						when others =>	 													
-							read_bit_flag <= 0;										
-							GET_DATA_CNT  <= 0; 										
-					end case;
-
-				when READ_BIT =>															
-					case read_bit_flag is											
-						when 0=>																
-							read_bit_flag <= 1;
-						when 1=>																
-							ds_data_bus <= 'Z';--aqui											
-							S_reset 		<= '0';											
-							if (i = 13) then												
-								S_reset		 <= '1';										
-								read_bit_flag <= 2;
-							end if; 
-						when 2=>																
-							data(bit_cnt)	<= ds_data_bus;							
-							bit_cnt := bit_cnt + 1;										
-						when 3=>															
-							S_reset <= '0';												
-							if (i = 63) then												
-								S_reset<='1';												
-								read_bit_flag <= 0;										
-								state 		  <= GET_DATA;							
-							end if;
-						when others => 												
-							read_bit_flag <= 0;									
-							bit_cnt		  := 0;											
-							GET_DATA_CNT  <= 0;								
-							state			  <= RESET;										
-					end case;
-
-				when WRITE_BYTE =>											
-					case WRITE_BYTE_CNT is												
-						when 0 to 7=>														
-							if (write_command(WRITE_BYTE_CNT) = '0') then		
-								state <= WRITE_LOW; 									
-							else																
-								state <= WRITE_HIGH;									
-							end if;
-							WRITE_BYTE_CNT <= WRITE_BYTE_CNT + 1;					
-						when 8=>													
-							WRITE_BYTE_CNT <= 0;											
-							state				<= SEND;										
-						when others=>														
-							WRITE_BYTE_CNT  <= 0;										
-							write_low_flag  <= 0;										
-							write_high_flag <= 0;										
-							state 		   <= RESET;									
-						end case;
-
-				when WRITE_LOW =>															
-					case write_low_flag is												
-						when 0=>																
-							ds_data_bus <= '0';										
-							S_reset 		<= '0';											
-							if (i = 59) then												
-								S_reset		   <='1';										
-								write_low_flag <= 1;
-							end if;
-						when 1=>																
-							ds_data_bus <= 'Z';										
-							S_reset 		<= '0';											
-							if (i = 3) then												
-								S_reset 		   <= '1';									
-								write_low_flag <= 2;
-							end if;
-						when 2=>																
-							write_low_flag <= 0;											
-							state 		   <= WRITE_BYTE;								
-						when others=>														
-							WRITE_BYTE_CNT  <= 0;										
-							write_low_flag  <= 0;										
-							state 		    <= RESET;									
-					end case;
-
-				when WRITE_HIGH =>														
-					case write_high_flag is												
-						when 0=>																
-							ds_data_bus <= '0';											
-							S_reset <= '0';												
-							if (i = 9) then												
-								S_reset 			<= '1';									
-								write_high_flag <= 1;
-							end if;
-						when 1=>																
-							ds_data_bus <= 'Z';											
-							S_reset 		<= '0';											
-							if (i = 53) then											
-								S_reset			<= '1';									
-								write_high_flag <= 2;
-							end if;
-						when 2=>																
-							write_high_flag <= 0;										
-							state 			 <= WRITE_BYTE;							
-						when others =>														
-							WRITE_BYTE_CNT  <= 0;										
-							write_high_flag <= 0;										
-							state 		    <= RESET;									
-					end case;
-
-				when others =>																
-					state <= RESET;														
-					
-			end case;
-		end if;
-	end process;
-
-	process(clk, S_reset)
-
-	begin
-		if (rising_edge(clk)) then
-		  if cont_aux=100 then 
-			 cont_aux<=0;
-		  	 if (S_reset = '1')then		
-				    i <= 0;						
-			 else
-				    i <= i + 1;				
-			 end if;
-		   else
-		   cont_aux<=cont_aux+1;
-		   end if; 
-		  end if;
-
-	end process;
-
-
-
-TempData <= dataOut(12 downto 4);
-
 --- Process para Reloj
-process(inicio, clk, riesgo)
-begin
-if inicio = '1' or not(modo = "01") then
-    cont_riesgo <= 0;
-    alarma <= '0';
-elsif rising_edge(clk) then
-    if(riesgo = '1' and cont_base = 100000000)then
-        alarma <= '1';
-        if(cont_riesgo = 9999) then
-            cont_riesgo <= 0;
-        else
-            cont_riesgo <= cont_riesgo +1;
-        end if;
-    else
-        cont_riesgo <= 0;
-    end if;
-end if;
-end process;
-
 process(inicio, clk)
 begin
 if inicio='1' then
@@ -979,7 +702,7 @@ end if;
 end process;
 
 -- Descripcion del contador BCD
-process(inicio, clk)
+process(inicio, clk) -- Contador BCD (De 0 a 9), sumando uno cada segundo
 begin
 if inicio='1' then
 cont_seg_uni<="0000";
@@ -994,7 +717,7 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
-process(inicio, clk)
+process(inicio, clk) -- Contador de decenas de segundos, llega hasta 5
 begin
 if inicio='1' then
 	cont_seg_dec<="0000";
@@ -1009,7 +732,7 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
-process(inicio, clk)
+process(inicio, clk) -- Contador de unidades de minuto
 begin
 if inicio='1' then
 cont_min_uni<="0000";
@@ -1024,7 +747,7 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
-process(inicio, clk)
+process(inicio, clk) -- Contador de decenas de minuto
 begin
 if inicio='1' then
 	cont_min_dec<="0000";
@@ -1039,18 +762,18 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
-process(clk, inicio)
+process(clk, inicio) 
 begin
 if inicio='1' then
 	enable_seg_aux<="1110";
 elsif rising_edge(clk) then
 	if cont_enable_aux= 100000 then--100000 then
-		enable_seg_aux<=enable_seg_aux(2 downto 0)&enable_seg_aux(3);
+		enable_seg_aux<=enable_seg_aux(2 downto 0)&enable_seg_aux(3); -- Rotamos el enable_seg_aux
 end if;
 end if;
 end process;
 
-process(inicio, clk)
+process(inicio, clk) -- Contador del enable seg
 begin
 if inicio='1' then
 	cont_enable_aux<=0;
@@ -1065,26 +788,21 @@ end process;
 
 relojData <= cont_min_dec & cont_min_uni & cont_seg_dec & cont_seg_uni;
 
----Mux datos
+-- Mux datos
 process(inicio, clk, sel)
 begin
 case(sel) is
-
-   when "001" => muxSensores <= "00000" & TempData;
-   when "010" => muxSensores <= distData;
-   when "011" => muxSensores <= hallData;--hallData;
-   
-   when "100" => muxSensores <= std_logic_vector(to_unsigned(cont_riesgo, 14));
-   when "101" => muxSensores <= std_logic_vector(to_unsigned(rTemp, 14));
-   when "110" => muxSensores <= std_logic_vector(to_unsigned(rDist, 14));
-   when "111" => muxSensores <= std_logic_vector(to_unsigned(rHall, 14));
+   when "001" => muxSensores <= distData; -- "010"
+   when "010" => muxSensores <= hallData; -- "011"
+   when "011" => muxSensores <= std_logic_vector(to_unsigned(rDist, 14)); -- 110
+   when "100" => muxSensores <= std_logic_vector(to_unsigned(rHall, 14)); -- 111
    when others => muxSensores <= "00000000000000";
 end case;
 end process;
 
 
----Onv bin2bcd
-process(clk, inicio)
+--- bin2bcd
+process(clk, inicio) -- Reloj
 begin
 if inicio='1' then
     cont<=0;
@@ -1126,25 +844,25 @@ elsif rising_edge(clk) then
                     end if;
     when "10" =>    cont_bits<=cont_bits;
                     fin<='0';
-                    if vector_aux(21 downto 18)>4 then
-                        vector_aux(21 downto 18)<=vector_aux(21 downto 18)+"0011";
-                    end if;
-                    if vector_aux(17 downto 14)>4 then
-                        vector_aux(17 downto 14)<=vector_aux(17 downto 14)+"0011";
-                    end if;
-                    if vector_aux(25 downto 22)>4 then
-                        vector_aux(25 downto 22)<=vector_aux(25 downto 22)+"0011";
-                    end if;
-                    if vector_aux(29 downto 26)>4 then
-                        vector_aux(29 downto 26)<=vector_aux(29 downto 26)+"0011";
-                    end if;
+                        if vector_aux(21 downto 18)>4 then
+                            vector_aux(21 downto 18)<=vector_aux(21 downto 18)+"0011";
+                        end if;
+                        if vector_aux(17 downto 14)>4 then
+                            vector_aux(17 downto 14)<=vector_aux(17 downto 14)+"0011";
+                        end if;
+                        if vector_aux(25 downto 22)>4 then
+                            vector_aux(25 downto 22)<=vector_aux(25 downto 22)+"0011";
+                        end if;
+                        if vector_aux(29 downto 26)>4 then
+                            vector_aux(29 downto 26)<=vector_aux(29 downto 26)+"0011";
+                        end if;
                     estado<="01";
     when "11" =>    cont_bits<=0;
                     fin<='1';
-                    decenas<=vector_aux(21 downto 18);
-                    unidades<=vector_aux(17 downto 14);
-                    centenas<=vector_aux(25 downto 22);
-                    millares<=vector_aux(29 downto 26);
+                        decenas<=vector_aux(21 downto 18);
+                        unidades<=vector_aux(17 downto 14);
+                        centenas<=vector_aux(25 downto 22);
+                        millares<=vector_aux(29 downto 26);
                     estado<="00";
     when others =>  cont_bits<=0;
                     fin<='0';
@@ -1159,11 +877,12 @@ bcdData <= millares & centenas & decenas & unidades;
 process(sel)
 begin
 if(sel = "000")then
-    to7seg <= relojData;
+    to7seg <= relojData; -- Si el modo es 0, mostramos el reloj en el siete segmentnos
 else
-    to7seg <= bcdData;
+    to7seg <= bcdData; -- Sino mostramos bcdData
 end if;
 end process;
+
 
 ---Process para 7seg
 
@@ -1181,7 +900,7 @@ end process;
 
 enable_seg <= enable_seg_aux;
 
---Bcd2 7seg
+--Bcd to 7seg
 process(salida_ver)
 begin
 case salida_ver is
