@@ -40,68 +40,86 @@ Port (
    trigger: out std_logic; 
     
    crc_en: OUT STD_LOGIC;
+   -- data_out_lsb: out std_logic_vector (7 downto 0);
+   -- data_out_msb: out std_logic_vector (3 downto 0);
    ds_data_bus: INOUT	STD_LOGIC
    );
 end main;
 
 architecture Behavioral of main is
 
------- Signals -------
-
--- Signals para el control
+------------------------------signals para control
 signal rDist: integer range 0 to 1023;
 signal rTemp: integer range 0 to 1023;
 signal rHall: integer range 0 to 1023;
 signal riesgo: std_logic;
 
--- Signals para filtrado del botón
+------------------------------signals para filtrado de btn
+--Up
 signal estadoU: std_logic_vector (1 downto 0);
+--Down
 signal estadoD: std_logic_vector (1 downto 0);
+--Left
 signal estadoL: std_logic_vector (1 downto 0);
+--R
 signal estadoR: std_logic_vector (1 downto 0);
-
--- Signals para pwmDC
+-------------------------------signals para pwmDC
+-- mot pwm
 signal estadoPWM: std_logic_vector(2 downto 0);
 signal contPWM: integer range 0 to 500000;
 signal tope: integer range 0 to 500000;
 signal pwm: std_logic;
 signal sentido: std_logic;
-
--- PID
+--PID
 signal error: integer range -50000 to 50000;
-
--- Signals para hallDC
+-------------------------------signals para hallDC
 signal cont_baseDC: integer range 0 to 100000000;
-signal contador_ticks: integer range 0 to 100000; -- Contador de microsegundos ticks de reloj
-signal contador_ticks_2: integer range 0 to 100000; -- Contador de microsegundos ticks de reloj
+signal contador_ticks: integer range 0 to 100000; --contador de microsegundos ticks de reloj
+signal contador_ticks_2: integer range 0 to 100000; --contador de microsegundos ticks de reloj
 signal rpm: integer range 0 to 9999;
 signal aux_rpm: integer range 0 to 9999;
 signal cont_microsDC: integer range 0 to 100000;
 signal estado_hall: std_logic_vector (2 downto 0);
 signal sentidoGiro: std_logic;
-
--- Conexión del sensor hall
+-- conexion del sensor hall
 signal hall: std_logic_vector (1 downto 0);
 signal cont_hall: integer range 0 to 1000;
 
--- Signals para distancia
+--------------------------------signals para distancia
 signal cont_micros: integer range 0 to 60000;
 signal cont_baseDist: integer range 0 to 100;
 signal cont_echo: integer range 0 to 60000;
 signal distancia_entero: integer range 0 to 1023;
 
--- Signals para stepper
+--------------------------------signals para stepper
 signal dirAux: std_logic;
-signal reloj_paso_paso: integer range 0 to 10000000; -- Generar la frecuencia de 50 Hz
-signal paso_paso_aux: std_logic; -- Para generar la salida
-signal tope_frecuencia_paso_paso: integer range 0 to 1000000000; -- Para controlar la velocidad
+signal reloj_paso_paso: integer range 0 to 10000000; --para generar la frecuencia de 50 Hz
+signal paso_paso_aux: std_logic; --para generar la salida
+signal tope_frecuencia_paso_paso: integer range 0 to 1000000000; --para controlar la velocidad
 signal frecuencia_paso_paso_entero: integer range 0 to 10000;
 
--- Signals para bin to bcd
+--------------------------------signal para PT100
+TYPE STATE_TYPE is (WAIT_800ms, RESET, PRESENCE, SEND, WRITE_BYTE, WRITE_LOW, WRITE_HIGH, GET_DATA, READ_BIT);
+SIGNAL state: STATE_TYPE;
+SIGNAL data	: STD_LOGIC_VECTOR(71 downto 0);
+SIGNAL S_reset	: STD_LOGIC;
+SIGNAL i			: INTEGER RANGE 0 TO 799999;
+SIGNAL write_command : STD_LOGIC_VECTOR(7 downto 0);
+SIGNAL presence_signal		: STD_LOGIC;
+SIGNAL WRITE_BYTE_CNT	: INTEGER RANGE 0 TO 8	:= 0;	-- citac pro odesilany bajt
+SIGNAL write_low_flag	: INTEGER RANGE 0 TO 2	:= 0;	-- priznak pozice ve stavu WRITE_LOW
+SIGNAL write_high_flag	: INTEGER RANGE 0 TO 2	:= 0;	--	priznak pozice ve stavu WRITE_HIGH
+SIGNAL read_bit_flag		: INTEGER RANGE 0 TO 3	:= 0;	-- priznak pozice ve stavu READ_BIT
+SIGNAL GET_DATA_CNT		: INTEGER RANGE 0 TO 72	:= 0;	-- citac pro pocet prectenych bitu
+SIGNAL CONT_AUX: integer range 0 to 100; --125; 				--chez a propochet ringa rangu
+signal dataOut			: STD_LOGIC_VECTOR(71 downto 0);
+
+---------------------------------signals para bin2bcd
 signal vector_aux: std_logic_vector (29 downto 0);
 signal estado: std_logic_vector (1 downto 0);
 signal cont_bits: integer range 0 to 13;
 signal fin: std_logic;
+
 signal sal_mux: std_logic_vector (3 downto 0);
 signal unidades: std_logic_vector (3 downto 0);
 signal decenas: std_logic_vector (3 downto 0);
@@ -109,9 +127,10 @@ signal centenas: std_logic_vector (3 downto 0);
 signal millares: std_logic_vector (3 downto 0);
 signal enable_aux: std_logic_vector (3 downto 0);
 signal cont_base_enable: integer range 0 to 100000;
+
 signal cont: integer range 0 to 100000000;
 
--- Signals para intercomunicar Cajas
+---------------------------------signals para intercomunicar Cajas
 signal relojData: std_logic_vector(15 downto 0);
 signal TempData: std_logic_vector(8 downto 0);
 signal distData: std_logic_vector(13 downto 0);
@@ -122,28 +141,28 @@ signal selLSB: std_logic_vector(1 downto 0);
 signal hallData: std_logic_vector(13 downto 0);
 signal sel: std_logic_vector(2 downto 0);
 signal rDistData: std_logic_vector(14 downto 0);
+
 signal der: std_logic;
 signal izq: std_logic;
 signal menos: std_logic;
 signal mas: std_logic;
+
 signal controlSt: std_logic_vector(1 downto 0);
 signal controlDC: std_logic;
 
--- Signal para 7seg
+-------------------------------------------------signal para 7seg
 signal salida_ver: std_logic_vector (3 downto 0); 
 
--- Signals para Reloj
+-------------------------------------------------signals para Reloj
 signal cont_seg_uni: std_logic_vector (3 downto 0);
 signal cont_seg_dec: std_logic_vector (3 downto 0);
 signal cont_min_uni: std_logic_vector (3 downto 0);
 signal cont_min_dec: std_logic_vector (3 downto 0);
+
 signal cont_riesgo: integer range 0 to 9999;
 signal cont_base: integer range 0 to 100000000;
 signal cont_enable_aux: integer range 0 to 100000;
 signal enable_seg_aux: std_logic_vector (3 downto 0);
-
-
------- Procesos -------
 
 begin
 
@@ -151,7 +170,8 @@ led <= sel & "0110111101111";
 selLSB <= sel(1 downto 0);
 hall <= dcEnc;
 
--- Filtrado de botón U
+---------------------------------------------filtrado de pulsadores
+--U
 process(inicio, clk)
 begin
 if inicio='1' then
@@ -188,7 +208,7 @@ when others => mas<='0';
 end case;
 end process;
 
----- Filtrado de botón D
+--D
 process(inicio, clk)
 begin
 if inicio='1' then
@@ -225,7 +245,7 @@ when others => menos<='0';
 end case;
 end process;
 
----- Filtrado de botón L
+--L
 process(inicio, clk)
 begin
 if inicio='1' then
@@ -262,7 +282,7 @@ when others => izq<='0';
 end case;
 end process;
 
----- Filtrado de botón R
+--R
 process(inicio, clk)
 begin
 if inicio='1' then
@@ -298,22 +318,31 @@ when "10" => der<='1';
 when others => der<='0';
 end case;
 end process;
+----------------------------------------------------------------------------
+----------------------------CONTROL-----------------------------------------
+----------------------------------------------------------------------------
 
-
------------ CONTROL -----------
-
--- Generacion de lineas de control
+--generacion de lineas de control
 process(inicio, clk, modo)
 begin
 if inicio = '1'then
     controlSt <= "00";
 elsif rising_edge(clk) then
 case modo is
-    when "00"=> -- Modo ida y vuelta continuo
+    when "00"=> --modo ida y vuelta continuo
         cale <= '0';
         controlSt <= "11"; 
         controlDC <= '0';
-    when "10" =>    -- Poner stepper a distancia especificada
+    when "01"=> --ida y vuelta hasta temperatura de riesgo
+        controlDC <= '0';
+        if riesgo = '1' then
+        controlSt <= "00";
+        cale <= '0';
+        else
+        controlSt <= "11";
+        cale <= '1';
+        end if;
+    when "10" =>    --poner stepper a distancia especificada
         controlDC <= '0';
         cale <= '0';
         if(rDist > distData)then
@@ -331,13 +360,22 @@ end case;
 end if;
 end process;
 
--- Insercion de datos por botones
+--insercion de datos por btns
 process(clk, inicio, sel)
 begin
 if inicio = '1' then
+--    rDist <= 0;
+--    rHall <= 0;
+--    rTemp <= 0;
     riesgo <= '0';
 elsif rising_edge(clk) then
     case sel is
+    when "101" =>
+        if mas = '1' then
+            rTemp <= rTemp +1;
+        elsif menos = '1'then
+            rTemp <= rTemp -1;
+        end if;
     when "110" => 
         if mas = '1' then
             rDist <= rDist +1;
@@ -355,9 +393,13 @@ elsif rising_edge(clk) then
     when others =>
     end case;
 end if;
+if(TempData > rTemp)then
+    riesgo <= '1';
+else
+    riesgo <= '0';
+end if;
 end process;
-
--- Generación de sel
+--generacion de sel
 process(clk, inicio)
 begin
 if inicio = '1' then
@@ -371,7 +413,9 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
---- Process para pwmDC
+---------------------------------------------process para pwmDC
+
+
 process(controlDC, pwmEnt, clk, inicio)
 begin
 if controlDC = '0'then
@@ -399,6 +443,13 @@ else
             tope <= 50000;
         
         end if;
+--        if(rHall > rpm)then
+--            tope <= tope +10;
+--        elsif(rHall < rpm)then
+--            tope <= tope -10;
+--        else
+--            tope <= tope;
+--        end if;
     end if;
 end if;
 
@@ -471,8 +522,8 @@ when others => pwm <= '0';
 end case;
 end process;
 
---- Process para hallDC
---- Cuenta las revoluciones del motor cada segundo y luego las pasa a la variable rev_per_seg
+---------------------------------------------process para hallDC
+-- cuenta las revoluciones del motor cada segundo y luego las pasa a la variable rev_per_seg
 process(clk, inicio)
 begin
 if rising_edge(clk) then
@@ -486,7 +537,7 @@ if rising_edge(clk) then
     else
         if contador_ticks = 100 then
             case estado_hall is
-                when "000" => -- Estado_hall inicial
+                when "000" => -- estado_hall inicial
                    
                     cont_microsDC <= 0;
                    
@@ -557,7 +608,7 @@ end process;
 
 
 
---- Process para distancia
+---------------------------------------------process para distancia
 -- Contador de micros y generacion del ciclo de 60 ms
 process(clk, inicio)
 begin
@@ -577,7 +628,7 @@ elsif rising_edge(clk) then
 end if;
 end process;
 
--- Generador del trigger
+-- generador del trigger
 process(cont_micros)
 begin
 if cont_micros<10 then
@@ -619,11 +670,11 @@ end process;
 distData <= "0000" & std_logic_vector(to_unsigned(distancia_entero, 10));
 
 
---- Process para stepper
+----------------------------------------------process para stepper
 frecuencia_paso_paso_entero<=to_integer(unsigned(sw & "00000"));
 tope_frecuencia_paso_paso<=(100000000/frecuencia_paso_paso_entero)/2;
 
---- Control de Stepper
+--control de Stepper
 process(clk, inicio, controlST)
 begin 
 if inicio = '1' then
@@ -631,24 +682,35 @@ if inicio = '1' then
     enableSteper <= enableSwS;
 elsif rising_edge(clk) then
     case controlSt is
-    when "00" =>    -- Parado
+    when "00" =>    --parado
         enableSteper <= '0';
-    when "01" =>    -- En direccion calle
+    when "01" =>    --en direccion calle
      dirAux <= '1';
      if(fc1Calle = '1')then
         enableSteper <= '0';
         else
         enableSteper <= enableSwS;
         end if;
-    when "10" =>    -- En direccion placa
+    when "10" =>    --en direccion placa
         dirAux <= '0';
         if(fc2Tarj = '1')then
         enableSteper <= '0';
         else
         enableSteper <= enableSwS;
         end if;
-    when "11" =>    -- En las 2 direcciones
-        enableSteper <= enableSwS;     
+    when "11" =>    --en las 2 direcciones
+        enableSteper <= enableSwS;
+        
+--        if(fc2Tarj = '0' and fc1Calle = '0')then
+--          dirAux <= dirAux;
+--         else
+--             if(fc2Tarj = '1')then
+--             dirAux <= '1';
+--             else
+--               dirAux <= '0';
+--             end if;
+--         end if;      
+    
     if(fc2Tarj = '0' and fc1Calle = '0')then
         dirAux <= dirAux;
     else
@@ -699,11 +761,225 @@ if(rising_edge(clk))then
 end if;
 end process;
 
+----------------------------------------------process para PT100
+process(clk)
+CONSTANT PRESENCE_ERROR_DATA: STD_LOGIC_VECTOR(71 downto 0):= "111111111111111111111111111111111111111111111111111111111111111111111111";
 
+	VARIABLE bit_cnt: INTEGER RANGE 0 TO 71;	-- prave cteny bit
+	VARIABLE flag: INTEGER RANGE 0 TO 5;		-- priznak pro odesilany prikaz
+
+	begin
+		if rising_edge(clk) and cont_aux=0 then
+			case	state is
+				when RESET =>																-- stav pro reset senzoru
+					S_reset <= '0';														-- reset citace
+					if (i = 0) then 
+						ds_data_bus <= '0';												--	zacatek resetovaciho pulzu
+					elsif (i = 485) then 
+						ds_data_bus <= 'Z'; --aqui												-- uvolneni sbernice
+					elsif (i = 550) then
+						presence_signal <= ds_data_bus;								-- odebrani vzorku pro zjisteni pritomnosti senzoru 
+					elsif (i = 1000) then 
+						state <= PRESENCE;												-- prechod do stavu PRESENCE	
+					end if;
+			
+				when PRESENCE =>															-- stav pro zjisteni pritomnosti senzoru na sbernici
+					-- detekce senzoru na sbernici
+					if (presence_signal = '0' and ds_data_bus = '1') then		-- senzor byl detkovan
+						S_reset <= '1';													-- reset citace
+						state	  <= SEND;													-- inicializace dokoncena, prechod do stavu SEND
+					else																		-- senzor nebyl detekovan
+						S_reset	<= '1';													-- reset citace
+						dataOut 	<= PRESENCE_ERROR_DATA;								-- nastaveni dat indikujicich chybu na vystup
+						crc_en	<= '1';													-- zahajeni vypoctu CRC
+						state		<= WAIT_800ms;											-- prechod do stavu WAIT_800ms
+					end if;
+
+				when SEND =>																-- stav pro odesilani prikazu pro senzor
+					-- sekvence odesilanych prikazu rizena priznakem flag
+					if (flag = 0) then													-- prvni prikaz
+						flag := 1;
+						write_command <="11001100"; 									-- prikaz CCh - SKIP ROM
+						state 		  <= WRITE_BYTE;									-- prechod do stavu WRITE BYTE
+					elsif (flag = 1) then												-- druhy prikaz
+						flag := 2;
+						write_command <="01000100"; 									-- prikaz 44h - CONVERT TEMPERATURE
+						state 		  <= WRITE_BYTE;									-- prechod do stavu WRITE BYTE
+					elsif (flag = 2) then												-- treti prikaz
+						flag := 3;	
+						state <= WAIT_800ms; 											-- prechod do stavu WAIT_800ms, cekani na ukonceni prikazu 44h
+					elsif (flag = 3) then												-- treti prikaz
+						flag := 4;
+						write_command <="11001100"; 									-- prikaz CCh - SKIP ROM
+						state			  <= WRITE_BYTE;									-- prechod do stavu WRITE BYTE
+					elsif (flag = 4) then												-- ctvrty prikaz
+						flag := 5;
+						write_command <="10111110"; 									-- prikaz BEh - READ SCRATCHPAD
+						state			  <= WRITE_BYTE;									-- prechod do stavu WRITE BYTE
+					elsif (flag = 5) then												-- ukonceni vysilani prikazu
+						flag := 0;															-- reset priznaku pro odesilany prikaz
+						state <= GET_DATA;												-- prechod do stavu GET_DATA
+					end if;
+
+				when  WAIT_800ms =>														-- stav cekani po dobu 800 ms
+					CRC_en <= '0';															-- reset priznaku pro zahajeni vypoctu CRC
+					S_reset <= '0';														-- spusteni citace
+					if (i = 799) then													-- konec periody citace
+						S_reset <='1';														-- resetovani citace
+						state	  <= RESET;													-- navrat do stavu RESET
+					end if;
+
+				when GET_DATA =>															-- stav pro precteni pameti scratchpad
+					case GET_DATA_CNT is													-- pozice ve stavu GET_DATA
+						when 0 to 71=>														-- cteni jednotlivych bitu pameti scratchpad
+							ds_data_bus  <= '0';											-- zahajeni cteni na sbernici
+							GET_DATA_CNT <= GET_DATA_CNT + 1;						-- inkrementace citace pro prave cteny bit
+							state 		 <= READ_BIT;									-- prechod do stavu READ_BIT
+						when 72=>															-- pamet prectena (72 bitu)
+							bit_cnt := 0;													-- reset citace pro prave cteny bit
+							GET_DATA_CNT <=0;												-- reset citace prectenych bitu
+							dataOut 	 <= data(71 downto 0);							-- odeslani prectenych dat na vystupni port
+							CRC_en 		 <= '1';											-- spusteni vypoctu CRC prectenych dat
+							state 		 <= WAIT_800ms;								-- navrat do stavu WAIT_800ms
+						when others =>	 													-- chyba ve stavu GET_DATA
+							read_bit_flag <= 0;											-- reset pozice ve stavu READ_BIT
+							GET_DATA_CNT  <= 0; 											-- reset citace pro pocet prectenych bitu
+					end case;
+
+				when READ_BIT =>															-- stav pro cteni bitu
+					-- sekvence cteni bitu rizena priznakem read_bit_flag
+					case read_bit_flag is												-- pozice ve stavu READ_BIT
+						when 0=>																-- vyslani zacatku casoveho slotu pro cteni
+							read_bit_flag <= 1;
+						when 1=>																
+							ds_data_bus <= 'Z';--aqui											-- uvolneni sbernice pro prijem bitu ze senzoru
+							S_reset 		<= '0';											-- zapnuti citace
+							if (i = 13) then												-- cekani 14 us
+								S_reset		 <= '1';										-- reset citace
+								read_bit_flag <= 2;
+							end if; 
+						when 2=>																-- odebrani vzorku dat ze sbernice
+							data(bit_cnt)	<= ds_data_bus;							-- ulozeni vzorku dat do registru
+							bit_cnt := bit_cnt + 1;										-- zvyseni citace pro prave cteny bit
+							read_bit_flag	<= 3;
+						when 3=>																-- dokonceni casoveho slotu
+							S_reset <= '0';												-- zapnuti citace
+							if (i = 63) then												-- cekani 62 us
+								S_reset<='1';												-- reset citace
+								read_bit_flag <= 0;										-- reset pozice ve stavu READ_BIT
+								state 		  <= GET_DATA;								-- navrat do stavu GET_DATA
+							end if;
+						when others => 													-- chyba ve stavu READ_BIT
+							read_bit_flag <= 0;											-- reset pozice ve stavu READ_BIT
+							bit_cnt		  := 0;											-- reset citace pro prave cteny bit
+							GET_DATA_CNT  <= 0;											-- reset citace prectenych bitu
+							state			  <= RESET;										-- reset senzoru
+					end case;
+
+				when WRITE_BYTE =>														-- stav pro zapis bajtu dat na sbernici
+					-- sekvence zapisu bajtu dat rizena citacem WRITE_BYTE_CNT
+					case WRITE_BYTE_CNT is												-- pozice ve stavu WRITE_BYTE
+						when 0 to 7=>														-- odesilani bitu 0-7
+							if (write_command(WRITE_BYTE_CNT) = '0') then		-- odesilany bit ma hodnotu log. 0
+								state <= WRITE_LOW; 										-- prechod do stavu WRITE_LOW
+							else																-- odesilany bit ma hodnotu log. 1
+								state <= WRITE_HIGH;										-- prechod do stavu WRITE_HIGH
+							end if;
+							WRITE_BYTE_CNT <= WRITE_BYTE_CNT + 1;					-- inkrementace citace odesilaneho bitu
+						when 8=>																-- odesilani bajtu dokonceno
+							WRITE_BYTE_CNT <= 0;											-- reset citace odesilaneho bitu
+							state				<= SEND;										-- navrat do stavu SEND
+						when others=>														-- chyba ve stavu WRITE_BYTE
+							WRITE_BYTE_CNT  <= 0;										-- reset citace odesilaneho bitu
+							write_low_flag  <= 0;										-- reset pozice ve stavu WRITE_LOW
+							write_high_flag <= 0;										-- reset pozice ve stavu WRITE_HIGH
+							state 		   <= RESET;									-- reset senzoru
+						end case;
+
+				when WRITE_LOW =>															-- stav pro zapis log. 0 na sbernici
+					-- casovy slot pro zapis log 0 rizeny priznakem write_low_flag
+					case write_low_flag is												-- pozice ve stavu WRITE_LOW
+						when 0=>																-- vyslani zacatku casoveho slotu pro zapis log. 0
+							ds_data_bus <= '0';											-- zacatek casoveho slotu
+							S_reset 		<= '0';											-- zapnuti citace
+							if (i = 59) then												-- cekani 60 us
+								S_reset		   <='1';										-- reset citace
+								write_low_flag <= 1;
+							end if;
+						when 1=>																-- uvolneni sbernice pro ukonceni casoveho slotu
+							ds_data_bus <= 'Z';--aqui											-- uvolneni sbernice
+							S_reset 		<= '0';											-- zapnuti citace
+							if (i = 3) then												-- cekani 4 us na ustaleni sbernice 
+								S_reset 		   <= '1';									-- reset citace
+								write_low_flag <= 2;
+							end if;
+						when 2=>																-- konec zapisu log. 0
+							write_low_flag <= 0;											-- reset pozice ve stavu WRITE_LOW
+							state 		   <= WRITE_BYTE;								-- navrat do stavu WRITE_BYTE
+						when others=>														-- chyba zapisu log. 0
+							WRITE_BYTE_CNT  <= 0;										-- reset citace odesilaneho bitu
+							write_low_flag  <= 0;										-- reset pozice ve stavu WRITE_LOW
+							state 		    <= RESET;									-- reset senzoru
+					end case;
+
+				when WRITE_HIGH =>														-- stav pro zapis log. 1 na sbernici
+					-- casovy slot pro zapis log 1 rizeny priznakem write_high_flag
+					case write_high_flag is												-- pozice ve stavu WRITE_HIGH
+						when 0=>																-- vyslani zacatku casoveho slotu pro zapis log. 1
+							ds_data_bus <= '0';											-- zacatek casoveho slotu
+							S_reset <= '0';												-- zapnuti citace
+							if (i = 9) then												-- cekani 10 us
+								S_reset 			<= '1';									-- reset citace
+								write_high_flag <= 1;
+							end if;
+						when 1=>																-- uvolneni sbernice pro ukonceni casoveho slotu
+							ds_data_bus <= 'Z';											-- uvolneni sbernice--aqui
+							S_reset 		<= '0';											-- zapnuti citace
+							if (i = 53) then												-- cekani 54 us
+								S_reset			<= '1';									-- reset citace
+								write_high_flag <= 2;
+							end if;
+						when 2=>																-- konec zapisu log. 1
+							write_high_flag <= 0;										-- reset pozice ve stavu WRITE_HIGH
+							state 			 <= WRITE_BYTE;							-- navrat do stavu WRITE BYTE
+						when others =>														-- chyba zapisu log. 1
+							WRITE_BYTE_CNT  <= 0;										-- reset citace odesilaneho bitu
+							write_high_flag <= 0;										-- reset pozice ve stavu WRITE_HIGH
+							state 		    <= RESET;									-- reset senzoru
+					end case;
+
+				when others =>																-- chyba FSM
+					state <= RESET;														-- reset senzoru
+					
+			end case;
+		end if;
+	end process;
+
+	-- Proces citace se synchronnim resetem
+	process(clk, S_reset)
+
+	begin
+		if (rising_edge(clk)) then
+		  if cont_aux=100 then --=125 then
+			 cont_aux<=0;
+		  	 if (S_reset = '1')then		-- reset citace
+				    i <= 0;						-- vynulovani citace
+			 else
+				    i <= i + 1;				-- inkrementace citace
+			 end if;
+		   else
+		   cont_aux<=cont_aux+1;
+		   end if; 
+		  end if;
+
+	end process;
+
+--data_out_lsb<=dataOut(7 downto 0);
+--data_out_msb<=dataOut(11 downto 8);
 
 TempData <= dataOut(12 downto 4);
 
---- Process para Reloj
+-----------------------------------------------process para Reloj
 process(inicio, clk, riesgo)
 begin
 if inicio = '1' or not(modo = "01") then
@@ -736,7 +1012,7 @@ end if;
 end if;
 end process;
 
--- Descripcion del contador BCD
+--descripcion del contador BCD
 process(inicio, clk)
 begin
 if inicio='1' then
@@ -823,7 +1099,7 @@ end process;
 
 relojData <= cont_min_dec & cont_min_uni & cont_seg_dec & cont_seg_uni;
 
----Mux datos
+-----------------------------------------------mux datos
 process(inicio, clk, sel)
 begin
 case(sel) is
@@ -841,7 +1117,7 @@ end case;
 end process;
 
 
----Onv bin2bcd
+--------------------------------------------- conv bin2bcd
 process(clk, inicio)
 begin
 if inicio='1' then
@@ -867,6 +1143,7 @@ if inicio='1' then
     millares<="0011";
     fin<='0';
 elsif rising_edge(clk) then
+--if cont=0 then
     case estado is
     when "00" =>    cont_bits<=0;
                     fin<='0';
@@ -909,11 +1186,12 @@ elsif rising_edge(clk) then
                     estado<="00";
     end case;
 end if;
-end process;
+--end if;
+end process;--final de decodificador BCD-7seg
 
 bcdData <= millares & centenas & decenas & unidades;
 
----Mux reloj
+----------------------------------------------mux reloj
 process(sel)
 begin
 if(sel = "000")then
@@ -923,9 +1201,8 @@ else
 end if;
 end process;
 
----Process para 7seg
-
----Mux 7seg
+----------------------------------------------process para 7seg
+--mux 7seg
 process(enable_seg_aux)
 begin
 case enable_seg_aux is
@@ -939,7 +1216,7 @@ end process;
 
 enable_seg <= enable_seg_aux;
 
---Bcd2 7seg
+--bcd2 7seg
 process(salida_ver)
 begin
 case salida_ver is
