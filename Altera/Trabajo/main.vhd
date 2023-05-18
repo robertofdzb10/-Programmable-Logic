@@ -637,15 +637,6 @@ elsif rising_edge(clk) then
         end if;
     when "11" =>    -- En las 2 direcciones
         enableSteper <= enableSwS;     
-    if(fc2Tarj = '0' and fc1Calle = '0')then --Si las dos estan a cero, continuamos en la dirección que fueramos
-        dirAux <= dirAux; 
-    else
-        if(fc2Tarj = '1')then
-            dirAux <= '1'; -- Giramos en dirección calle
-        else
-            dirAux <= '0'; --Giramos en dirección placa
-        end if;
-    end if;
     when others =>
         dirAux <= '0';
         enableSteper <= enableSwS; 
