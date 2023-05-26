@@ -756,7 +756,7 @@ when "0110" => segmentos<="1100000";
 when "0111" => segmentos<="0001111";
 when "1000" => segmentos<="0000000";
 when "1001" => segmentos<="0001100";
-when others => segmentosf<="0110000";
+when others => segmentos<="0110000";
 end case;
 end process;
 
