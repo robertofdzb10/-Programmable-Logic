@@ -12,7 +12,7 @@ Port (
    sw_blq_stepper: in std_logic; -- Switch para permitir el bloqueo o desbloqueo del stepper
    sw_stepper: in std_logic; -- Switch para activar el stepper
    enable_seg: out std_logic_vector(3 downto 0);
-   7_seg: out std_logic_vector(6 downto 0);
+   segmentos: out std_logic_vector(6 downto 0);
    modo_funcionamiento: in std_logic_vector(1 downto 0);
    parada: in std_logic;
    
@@ -89,7 +89,7 @@ signal contador_reloj_binario_bcd: integer range 0 to 100000000;
 signal estado_binario_bcd: std_logic_vector (1 downto 0); 
 signal contador_bits: integer range 0 to 13; 
 signal un: std_logic_vector (3 downto 0); 
-signal dc: std_logic_vector (3 downto 0); 
+signal dec: std_logic_vector (3 downto 0); 
 signal cen: std_logic_vector (3 downto 0);
 signal mil: std_logic_vector (3 downto 0);
 
@@ -838,17 +838,17 @@ enable_seg <= enable_seg_aux;
 process(salida_pantalla)
 begin
 case salida_pantalla is
-when "0000" => 7_seg<="0000001";
-when "0001" => 7_seg<="1001111";
-when "0010" => 7_seg<="0010010";
-when "0011" => 7_seg<="0000110";
-when "0100" => 7_seg<="1001100";
-when "0101" => 7_seg<="0100100";
-when "0110" => 7_seg<="1100000";
-when "0111" => 7_seg<="0001111";
-when "1000" => 7_seg<="0000000";
-when "1001" => 7_seg<="0001100";
-when others => 7_seg<="0110000";
+when "0000" => segmentos<="0000001";
+when "0001" => segmentos<="1001111";
+when "0010" => segmentos<="0010010";
+when "0011" => segmentos<="0000110";
+when "0100" => segmentos<="1001100";
+when "0101" => segmentos<="0100100";
+when "0110" => segmentos<="1100000";
+when "0111" => segmentos<="0001111";
+when "1000" => segmentos<="0000000";
+when "1001" => segmentos<="0001100";
+when others => segmentos<="0110000";
 end case;
 end process;
 
