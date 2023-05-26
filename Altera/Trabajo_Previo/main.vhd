@@ -295,7 +295,7 @@ frecuencia_stepper_entero<=to_integer(unsigned(sw & "00000")); --Mediante el sw 
 tope_frecuencia_stepper<=(100000000/frecuencia_stepper_entero)/2;
 
 --- Control de Stepper
-process(clk, inicio, controlST)
+process(clk, inicio, control_Stepper)
 begin 
 if inicio = '1' then
     direccion_aux <= '0'; -- La dirección en la que el motor girará, horaria (clockwise) y antihoraria (counterclockwise).
@@ -373,7 +373,7 @@ elsif rising_edge(clk) then
         end if;
     when "100" => -- Cambiar la velocidad manualmente
         if parada = '0'then
-        if maumentar_valoras = '1' then
+        if aumentar_valor = '1' then
             velocidad_objetivo <= velocidad_objetivo +1;
         elsif disminuir_valor = '1'then
             velocidad_objetivo <= velocidad_objetivo -1;
@@ -444,14 +444,14 @@ elsif rising_edge(clk)then
         estado_pwm <= "100";   
      when "011" =>
         contador_pwm <= contador_pwm +1;
-        if (contador_pwm = 500 000 and tope_motor_DC = 0)then
+        if (contador_pwm = 500000 and tope_motor_DC = 0)then
             estado_pwm <= "001";
-        elsif (contador_pwm = 500 000)then
+        elsif (contador_pwm = 500000)then
             estado_pwm <= "010";
         end if;
      when "100" =>
         contador_pwm <= contador_pwm +1;
-        if (contador_pwm = tope_motor_DC and tope_motor_DC = 500 000)then
+        if (contador_pwm = tope_motor_DC and tope_motor_DC = 500000)then
             estado_pwm <= "010";
         elsif (contador_pwm = tope_motor_DC)then
             estado_pwm <= "011";
@@ -519,7 +519,7 @@ begin
 if inicio='1' then
     distancia_entero<=0;
 elsif rising_edge(clk) then
-    if cont_miccontador_microsros=60000 then -- Hacemos una medición cada 60ms
+    if contador_micros=60000 then -- Hacemos una medición cada 60ms
         distancia_entero<=contador_echo/58; -- Según la fórmula proporcionada en la descripción del sensor
     end if;
 end if;

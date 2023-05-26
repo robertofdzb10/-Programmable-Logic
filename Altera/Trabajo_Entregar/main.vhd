@@ -309,7 +309,7 @@ frecuencia_stepper_entero<=to_integer(unsigned(sw & "00000")); --Mediante el sw 
 tope_frecuencia_stepper<=(100000000/frecuencia_stepper_entero)/2;
 
 --- Control de Stepper
-process(clk, inicio, controlST)
+process(clk, inicio, control_Stepper)
 begin 
 if inicio = '1' then
     direccion_aux <= '0'; -- La dirección en la que el motor girará, horaria (clockwise) y antihoraria (counterclockwise).
@@ -389,7 +389,7 @@ elsif rising_edge(clk) then
         end if;
     when "100" => -- Cambiar la velocidad manualmente
         if parada = '0'then
-        if maumentar_valoras = '1' then
+        if aumentar_valor = '1' then
             velocidad_objetivo <= velocidad_objetivo +1;
         elsif disminuir_valor = '1'then
             velocidad_objetivo <= velocidad_objetivo -1;
@@ -482,7 +482,7 @@ end process;
 
 --- Process para hallDC
 --- Cuenta las revoluciones del motor cada segundo y luego las pasa a la variable rev_per_seg
-process(clk, inicio)
+process(clk, inicio) -- Pendiente
 begin
 if rising_edge(clk) then
     if inicio='1' then
@@ -506,11 +506,9 @@ if rising_edge(clk) then
                     if contador_automata_motor_dc >= 60000 then
                         revoluciones_por_minuto <= 0;
                         estado_hall <= "000";
-                    elsif hall = "01" then -- Quitar
-                        sentidoGiro <= '0'; -- Sentido de giro positivo
+                    elsif hall = "01" then 
                         estado_hall <= "010";
-                    elsif hall = "10" then -- Quitar
-                        sentidoGiro <= '1'; -- Sentido de giro negativo
+                    elsif hall = "10" then 
                         estado_hall <= "011";
                     end if;       
                  when "010" =>
@@ -530,7 +528,7 @@ if rising_edge(clk) then
                         estado_hall <= "100";
                     end if; 
                 when "100" =>
-                    aux_revoluciones_por_minuto <= (60 000 000 / (contador_automata_motor_dc * 8 * 120));
+                    aux_revoluciones_por_minuto <= (60000000 / (contador_automata_motor_dc * 8 * 120));
                     -- En este caso, la velocidad del motor se actualiza después de 100 mediciones, lo que puede ayudar a reducir la cantidad de actualizaciones innecesarias y filtrar posibles variaciones o ruido en la señal
                     if contador_sensor_hall = 100 and (aux_revoluciones_por_minuto < revoluciones_por_minuto - 2 or aux_revoluciones_por_minuto > revoluciones_por_minuto + 2) then -- Solo actualizamos el rpm si el nuevo valor difiere en valor absoluto del anterior en má de dos unidades, para evitar cambios absurdos
                         revoluciones_por_minuto <= aux_revoluciones_por_minuto;
@@ -609,7 +607,7 @@ begin
 if inicio='1' then
     distancia_entero<=0;
 elsif rising_edge(clk) then
-    if cont_miccontador_microsros=60000 then -- Hacemos una medición cada 60ms
+    if contador_micros=60000 then -- Hacemos una medición cada 60ms
         distancia_entero<=contador_echo/58; -- Según la fórmula proporcionada en la descripción del sensor
     end if;
 end if;
