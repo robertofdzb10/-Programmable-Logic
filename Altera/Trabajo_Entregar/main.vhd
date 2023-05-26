@@ -460,14 +460,14 @@ elsif rising_edge(clk)then
         estado_pwm <= "100";   
      when "011" =>
         contador_pwm <= contador_pwm +1;
-        if (contador_pwm = 500 000 and tope_motor_DC = 0)then
+        if (contador_pwm = 500000 and tope_motor_DC = 0)then
             estado_pwm <= "001";
-        elsif (contador_pwm = 500 000)then
+        elsif (contador_pwm = 500000)then
             estado_pwm <= "010";
         end if;
      when "100" =>
         contador_pwm <= contador_pwm +1;
-        if (contador_pwm = tope_motor_DC and tope_motor_DC = 500 000)then
+        if (contador_pwm = tope_motor_DC and tope_motor_DC = 500000)then
             estado_pwm <= "010";
         elsif (contador_pwm = tope_motor_DC)then
             estado_pwm <= "011";
